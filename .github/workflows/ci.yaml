@@ -135,8 +135,8 @@ jobs:
               uses: azure/setup-helm@v4
             - name: Deploy with Helm
               run: |
-                  helm upgrade --install my-app-release ./charts/my-app \
-                    --namespace production \
+                  helm upgrade --install tasks-notes ./k8s/chart \
+                    --namespace tasks-notes \
                     --create-namespace \
                     --wait \
                     --set client.image.tag=${{ needs.create_version.outputs.version }} \
