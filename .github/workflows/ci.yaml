@@ -56,7 +56,7 @@ jobs:
       issues: write
       pull-requests: write
     outputs:
-      version: ${{ steps.semantic-release.outputs.new_release_version }}
+      version: ${{ steps.semantic-release.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -116,7 +116,7 @@ jobs:
           # We point to the specific Dockerfile for each app
           file: ./apps/${{ matrix.app }}/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.app }}:${{ needs.create_version.outputs.version }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/tasks-notes-${{ matrix.app }}:${{ needs.create_version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
