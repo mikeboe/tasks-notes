@@ -10,7 +10,7 @@ env:
     IMAGE_OWNER: ${{ github.repository_owner }}
 
 jobs:
-    # Job 1: Build both applications in parallel
+    # Job 1: Build both applications in parallel (No changes here)
     build_apps:
         name: Build ${{ matrix.app }}
         runs-on: ubuntu-latest
@@ -26,27 +26,22 @@ jobs:
               with:
                   node-version: "22"
                   cache: "npm"
-                  # Cache is based on the single, root package-lock.json
                   cache-dependency-path: "./package-lock.json"
 
             - name: Install All Dependencies
-              # Run from the root of the monorepo
               run: npm ci
 
             - name: Build Workspace '${{ matrix.app }}'
-              # Use the --workspace flag to target the specific app
               run: npm run build --workspace=${{ matrix.app }}
 
             - name: Upload build artifact
               uses: actions/upload-artifact@v4
               with:
-                  # Artifact name is the same
                   name: dist-${{ matrix.app }}
-                  # The path is now inside the apps/* directory
                   path: ./apps/${{ matrix.app }}/dist/
                   retention-days: 1
 
-    # Job 2: Create a new version number (no changes needed here)
+    # Job 2: Create a new version number
     create_version:
         name: Create Version
         runs-on: ubuntu-latest
@@ -56,7 +51,8 @@ jobs:
             issues: write
             pull-requests: write
         outputs:
-            version: ${{ steps.semantic-release.outputs.version }}
+            # CORRECTION: The output from go-semantic-release is 'new_release_version'
+            version: ${{ steps.semantic-release.outputs.new_release_version }} 
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -75,7 +71,7 @@ jobs:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   update-file: "package.json"
 
-    # Job 3: Build and Push Docker images in parallel
+    # Job 3: Build and Push MULTI-PLATFORM Docker images in parallel
     build_and_push_docker:
         name: Dockerize ${{ matrix.app }}
         runs-on: ubuntu-latest
@@ -86,24 +82,23 @@ jobs:
         permissions:
             contents: read
             packages: write
-        env:
-            VITE_API_BASE_URL: https://api.tasks-notes.mikeboe.com
-
+        
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            # Download the artifact into the correct sub-directory
             - name: Download build artifact
               uses: actions/download-artifact@v4
               with:
                   name: dist-${{ matrix.app }}
                   path: ./apps/${{ matrix.app }}/dist/
 
-            - name: show contents
-              run: cd apps/${{ matrix.app }} && ls -la
-            - name: show dist
-              run: cd apps/${{ matrix.app }}/dist && ls -la
+            - name: Set up QEMU for multi-platform builds
+              # <--- ADD THIS STEP
+              uses: docker/setup-qemu-action@v3
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
             - name: Log in to the Container Registry
               uses: docker/login-action@v3
@@ -112,22 +107,20 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
-
             - name: Build and push Docker image for ${{ matrix.app }}
               uses: docker/build-push-action@v5
               with:
-                  # IMPORTANT: The context is now the root of the repo for the api Dockerfile to work
-                  context: ./apps/${{ matrix.app }}
-                  # We point to the specific Dockerfile for each app
+                  # IMPORTANT: Context should be the repo root for workspaces
+                  context: .
                   file: ./apps/${{ matrix.app }}/Dockerfile
                   push: true
+                  # <--- ADD THIS LINE
+                  platforms: linux/amd64,linux/arm64
                   tags: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/tasks-notes-${{ matrix.app }}:${{ needs.create_version.outputs.version }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
 
-    # Job 4: Deploy to Kubernetes (no changes needed here)
+    # Job 4: Deploy to Kubernetes
     deploy:
         name: Deploy to Kubernetes
         runs-on: ubuntu-latest
