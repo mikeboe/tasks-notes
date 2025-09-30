@@ -1,19 +1,13 @@
-# Step 1: Build the application
-# FROM --platform=linux/amd64 node:22-alpine AS builder
-# # ARG BUILD_CONTEXT
+# Use a lightweight Nginx server
+FROM nginx:1.25-alpine
 
-# WORKDIR /base
-# COPY . . 
+# Remove the default Nginx static content
+RUN rm -rf /usr/share/nginx/html/*
 
-# RUN npm i 
-# RUN npm run build 
+# Copy the pre-built artifacts from the build context (the 'dist' folder)
+# The GitHub Actions workflow will place the 'dist' folder here before building.
+COPY dist/ /usr/share/nginx/html
 
-# # Step 2: Set up the production environment on nginx
-FROM nginx:stable-alpine
-
-# COPY --from=builder /base/dist /usr/share/nginx/html
-COPY ./dist /usr/share/nginx/html
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-
+# Expose port 80 and start Nginx
 EXPOSE 80
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-g", "daemon off;"]
