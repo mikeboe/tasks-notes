@@ -51,8 +51,7 @@ jobs:
             issues: write
             pull-requests: write
         outputs:
-            # CORRECTION: The output from go-semantic-release is 'new_release_version'
-            version: ${{ steps.semantic-release.outputs.new_release_version }} 
+            version: ${{ steps.semantic-release.outputs.version }} 
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
