@@ -117,7 +117,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           # IMPORTANT: The context is now the root of the repo for the api Dockerfile to work
-          context: .
+          context: ./apps/${{ matrix.app }}
           # We point to the specific Dockerfile for each app
           file: ./apps/${{ matrix.app }}/Dockerfile
           push: true
