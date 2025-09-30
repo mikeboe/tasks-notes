@@ -99,9 +99,9 @@ jobs:
           path: ./apps/${{ matrix.app }}/dist/
 
       - name: show contents
-        run: ls -la
+        run: cd apps/${{ matrix.app }} && ls -la
       - name: show dist
-        run: ls -la dist
+        run: cd apps/${{ matrix.app }}/dist && ls -la
 
       - name: Log in to the Container Registry
         uses: docker/login-action@v3
