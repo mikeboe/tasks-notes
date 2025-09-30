@@ -1,0 +1,110 @@
+# .github/workflows/ci-cd.yml
+
+name: CI/CD for Monorepo Apps
+
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to the main branch
+
+env:
+  # Replace with your container registry and username/repo
+  # Using GitHub Container Registry (GHCR) as an example
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: ${{ github.repository_owner }}
+
+jobs:
+  # Job 1: Prepare a unique version tag for this specific commit
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      # The version tag will be available to other jobs as 'needs.prepare.outputs.version'
+      version: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed for versioning based on git history/tags if you use it
+
+      - name: Generate version tag
+        id: version
+        # Creates a version like: 2023.10.27-a1b2c3d
+        run: echo "VERSION=$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+  # Job 2: Build and Push Docker images for all apps in parallel
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: prepare # This job depends on the 'prepare' job to get the version
+    strategy:
+      matrix:
+        # This is the magic! The job will run for each item in this list.
+        app: [client, backend]
+    permissions:
+      contents: read
+      packages: write # Needed to push images to GHCR
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.IMAGE_OWNER }}
+          password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # The image name is constructed dynamically using the matrix value
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.app }}
+          tags: |
+            type=raw,value=${{ needs.prepare.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+      
+      - name: Build and push Docker image for ${{ matrix.app }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.app }} # Tells Docker where the Dockerfile is
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Job 3: Deploy the applications to Kubernetes using Helm
+  deploy:
+    runs-on: ubuntu-latest
+    # This job runs only after ALL matrix jobs in 'build-and-push' have succeeded
+    needs: [prepare, build-and-push] 
+    environment: production # Optional: Use environments for protection rules and secrets
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Kubernetes context
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          # This secret contains the base64 encoded kubeconfig file
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.13.0' # Specify a Helm version
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install my-app-release ./charts/my-app \
+            --namespace production \
+            --create-namespace \
+            --wait \
+            --set client.image.tag=${{ needs.prepare.outputs.version }} \
+            --set backend.image.tag=${{ needs.prepare.outputs.version }}

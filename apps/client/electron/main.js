@@ -1,0 +1,47 @@
+import { app, BrowserWindow, session } from 'electron';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let mainWindow;
+
+function createWindow () {
+    mainWindow = new BrowserWindow({
+        width: 1200,
+        height: 800,
+        webPreferences: {
+            preload: path.join(__dirname, '../electron/preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true,
+            enableRemoteModule: false,
+            webSecurity: false, // Allow cookies for development
+        }
+    });
+
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.webContents.openDevTools(); // this is optional thing, use it if you see a devTool window opened
+}
+
+app.whenReady().then(() => {
+    // Configure session for better cookie handling
+    const sess = session.defaultSession;
+    
+    // Allow CORS and credentials for your API domain
+    sess.webRequest.onHeadersReceived({ urls: ['*://*/*'] }, (details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Access-Control-Allow-Credentials': ['true']
+            }
+        });
+    });
+}).then(createWindow)
+
+app.on('window-all-closed', () => {
+    // eslint-disable-next-line no-undef
+    if (process.platform !== 'darwin') {
+        app.quit()
+    }
+})
