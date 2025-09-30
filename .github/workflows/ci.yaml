@@ -26,11 +26,11 @@ jobs:
         with:
           node-version: "22"
           cache: 'npm' # Cache dependencies
-          cache-dependency-path: './${{ matrix.app }}/package-lock.json'
+          cache-dependency-path: './apps/${{ matrix.app }}/package-lock.json'
 
       - name: Install Dependencies & Build
         # Use working-directory to run commands in the correct subfolder
-        working-directory: ./${{ matrix.app }}
+        working-directory: ./apps/${{ matrix.app }}
         run: |
           npm ci
           npm run build
@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.app }}
-          path: ./${{ matrix.app }}/dist/
+          path: ./apps/${{ matrix.app }}/dist/
           retention-days: 1 # Keep artifact for 1 day
 
   # Job 2: Create a new version number if all builds succeeded
