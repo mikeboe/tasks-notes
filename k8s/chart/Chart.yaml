@@ -1,0 +1,8 @@
+name: tasks-notes
+description: A generated Helm Chart for Kubernetes
+version: "1.0.0"
+apiVersion: v2
+keywords:
+  - kubernetes
+sources:
+home: https://github.com/mikeboe/tasks-notes

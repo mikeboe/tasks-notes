@@ -1,0 +1,21 @@
+ingress:
+  name: tasks-notes-ingress
+  allowOrigin: "*"
+client:
+  host: app.tasks-notes.mikeboe.com
+  image:
+    repository: ghcr.io/mikeboe/tasks-notes-client
+    tag: latest
+api:
+  host: api.tasks-notes.mikeboe.com
+  image:
+    repository: ghcr.io/mikeboe/tasks-notes-api
+    tag: latest
+  env:
+    JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+    JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+    JWT_ACCESS_EXPIRES_IN: 15m
+    JWT_REFRESH_EXPIRES_IN: 7d
+    DATABASE_URL: ${DATABASE_URL}
+    NODE_ENV: production
+    PORT: 3000
