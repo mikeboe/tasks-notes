@@ -1,43 +1,91 @@
-# .github/workflows/ci-cd.yml
-
-name: CI/CD for Monorepo Apps
+name: CI/CD Monorepo
 
 on:
   push:
     branches:
-      - main # Trigger on pushes to the main branch
+      - main
 
 env:
-  # Replace with your container registry and username/repo
-  # Using GitHub Container Registry (GHCR) as an example
   REGISTRY: ghcr.io
   IMAGE_OWNER: ${{ github.repository_owner }}
 
 jobs:
-  # Job 1: Prepare a unique version tag for this specific commit
-  prepare:
+  # Job 1: Build both applications in parallel to check for errors
+  build_apps:
+    name: Build ${{ matrix.app }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [client, backend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: 'npm' # Cache dependencies
+          cache-dependency-path: './${{ matrix.app }}/package-lock.json'
+
+      - name: Install Dependencies & Build
+        # Use working-directory to run commands in the correct subfolder
+        working-directory: ./${{ matrix.app }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.app }}
+          path: ./${{ matrix.app }}/dist/
+          retention-days: 1 # Keep artifact for 1 day
+
+  # Job 2: Create a new version number if all builds succeeded
+  create_version:
+    name: Create Version
+    runs-on: ubuntu-latest
+    needs: build_apps # This job depends on the successful completion of BOTH build jobs
+    permissions:
+      contents: write # To push tags and update files
+      issues: write   # To create release notes
+      pull-requests: write # To comment on PRs
     outputs:
-      # The version tag will be available to other jobs as 'needs.prepare.outputs.version'
-      version: ${{ steps.version.outputs.VERSION }}
+      version: ${{ steps.semantic-release.outputs.new_release_version }}
+      # We use 'new_release_version' as per go-semantic-release docs
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Needed for versioning based on git history/tags if you use it
+          # We need the full history for semantic-release to analyze commits
+          fetch-depth: 0
 
-      - name: Generate version tag
-        id: version
-        # Creates a version like: 2023.10.27-a1b2c3d
-        run: echo "VERSION=$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      
+      # NOTE: Ensure your repo has conventional commits for this to work.
+      # Also, make sure go-semantic-release is configured correctly for your monorepo.
+      # This example assumes it updates a root package.json or has a .releaserc config.
+      - name: Run Semantic Release
+        id: semantic-release
+        uses: go-semantic-release/action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # The 'update-file' param might need adjustment based on your monorepo setup
+          # If you have a single version, this is fine.
+          update-file: "package.json" 
 
-  # Job 2: Build and Push Docker images for all apps in parallel
-  build-and-push:
+  # Job 3: Build and Push Docker images in parallel
+  build_and_push_docker:
+    name: Dockerize ${{ matrix.app }}
     runs-on: ubuntu-latest
-    needs: prepare # This job depends on the 'prepare' job to get the version
+    # Depends on versioning, which in turn depends on the build
+    needs: create_version 
     strategy:
       matrix:
-        # This is the magic! The job will run for each item in this list.
         app: [client, backend]
     permissions:
       contents: read
@@ -46,6 +94,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # This is the key step: download the build artifacts from the first job
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ matrix.app }}
+          path: ./${{ matrix.app }}/dist/ # Download it directly to the correct location
 
       - name: Log in to the Container Registry
         uses: docker/login-action@v3
@@ -56,49 +111,36 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          # The image name is constructed dynamically using the matrix value
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.app }}
-          tags: |
-            type=raw,value=${{ needs.prepare.outputs.version }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
       
       - name: Build and push Docker image for ${{ matrix.app }}
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.app }} # Tells Docker where the Dockerfile is
+          context: ./${{ matrix.app }} # The context is the app's folder
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          # Use the version from the 'create_version' job
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.app }}:${{ needs.create_version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Job 3: Deploy the applications to Kubernetes using Helm
+  # Job 4: Deploy to Kubernetes
   deploy:
+    name: Deploy to Kubernetes
     runs-on: ubuntu-latest
-    # This job runs only after ALL matrix jobs in 'build-and-push' have succeeded
-    needs: [prepare, build-and-push] 
-    environment: production # Optional: Use environments for protection rules and secrets
+    needs: [create_version, build_and_push_docker]
+    environment: production
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Kubernetes context
+      - name: Set up K8s context
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
-          # This secret contains the base64 encoded kubeconfig file
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
-        with:
-          version: 'v3.13.0' # Specify a Helm version
 
       - name: Deploy with Helm
         run: |
@@ -106,5 +148,5 @@ jobs:
             --namespace production \
             --create-namespace \
             --wait \
-            --set client.image.tag=${{ needs.prepare.outputs.version }} \
-            --set backend.image.tag=${{ needs.prepare.outputs.version }}
+            --set client.image.tag=${{ needs.create_version.outputs.version }} \
+            --set backend.image.tag=${{ needs.create_version.outputs.version }}
