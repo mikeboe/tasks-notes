@@ -109,11 +109,9 @@ jobs:
             - name: Build and push Docker image for ${{ matrix.app }}
               uses: docker/build-push-action@v5
               with:
-                  # IMPORTANT: Context should be the repo root for workspaces
-                  context: .
+                  context: ./apps/${{ matrix.app }}
                   file: ./apps/${{ matrix.app }}/Dockerfile
                   push: true
-                  # <--- ADD THIS LINE
                   platforms: linux/amd64,linux/arm64
                   tags: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/tasks-notes-${{ matrix.app }}:${{ needs.create_version.outputs.version }}
                   cache-from: type=gha
