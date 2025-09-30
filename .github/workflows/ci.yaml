@@ -10,13 +10,13 @@ env:
   IMAGE_OWNER: ${{ github.repository_owner }}
 
 jobs:
-  # Job 1: Build both applications in parallel to check for errors
+  # Job 1: Build both applications in parallel
   build_apps:
     name: Build ${{ matrix.app }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [client, backend]
+        app: [client, api]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,40 +25,42 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: 'npm' # Cache dependencies
-          cache-dependency-path: './apps/${{ matrix.app }}/package-lock.json'
+          cache: 'npm'
+          # Cache is based on the single, root package-lock.json
+          cache-dependency-path: './package-lock.json'
 
-      - name: Install Dependencies & Build
-        # Use working-directory to run commands in the correct subfolder
-        working-directory: ./apps/${{ matrix.app }}
-        run: |
-          npm ci
-          npm run build
+      - name: Install All Dependencies
+        # Run from the root of the monorepo
+        run: npm ci
+
+      - name: Build Workspace '${{ matrix.app }}'
+        # Use the --workspace flag to target the specific app
+        run: npm run build --workspace=${{ matrix.app }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
+          # Artifact name is the same
           name: dist-${{ matrix.app }}
+          # The path is now inside the apps/* directory
           path: ./apps/${{ matrix.app }}/dist/
-          retention-days: 1 # Keep artifact for 1 day
+          retention-days: 1
 
-  # Job 2: Create a new version number if all builds succeeded
+  # Job 2: Create a new version number (no changes needed here)
   create_version:
     name: Create Version
     runs-on: ubuntu-latest
-    needs: build_apps # This job depends on the successful completion of BOTH build jobs
+    needs: build_apps
     permissions:
-      contents: write # To push tags and update files
-      issues: write   # To create release notes
-      pull-requests: write # To comment on PRs
+      contents: write
+      issues: write
+      pull-requests: write
     outputs:
       version: ${{ steps.semantic-release.outputs.new_release_version }}
-      # We use 'new_release_version' as per go-semantic-release docs
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # We need the full history for semantic-release to analyze commits
           fetch-depth: 0
 
       - name: Set up Node.js
@@ -66,41 +68,35 @@ jobs:
         with:
           node-version: "22"
       
-      # NOTE: Ensure your repo has conventional commits for this to work.
-      # Also, make sure go-semantic-release is configured correctly for your monorepo.
-      # This example assumes it updates a root package.json or has a .releaserc config.
       - name: Run Semantic Release
         id: semantic-release
         uses: go-semantic-release/action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # The 'update-file' param might need adjustment based on your monorepo setup
-          # If you have a single version, this is fine.
-          update-file: "package.json" 
+          update-file: "package.json"
 
   # Job 3: Build and Push Docker images in parallel
   build_and_push_docker:
     name: Dockerize ${{ matrix.app }}
     runs-on: ubuntu-latest
-    # Depends on versioning, which in turn depends on the build
-    needs: create_version 
+    needs: create_version
     strategy:
       matrix:
-        app: [client, backend]
+        app: [client, api]
     permissions:
       contents: read
-      packages: write # Needed to push images to GHCR
+      packages: write
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # This is the key step: download the build artifacts from the first job
+      # Download the artifact into the correct sub-directory
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: dist-${{ matrix.app }}
-          path: ./${{ matrix.app }}/dist/ # Download it directly to the correct location
+          path: ./apps/${{ matrix.app }}/dist/
 
       - name: Log in to the Container Registry
         uses: docker/login-action@v3
@@ -115,33 +111,31 @@ jobs:
       - name: Build and push Docker image for ${{ matrix.app }}
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.app }} # The context is the app's folder
+          # IMPORTANT: The context is now the root of the repo for the api Dockerfile to work
+          context: .
+          # We point to the specific Dockerfile for each app
+          file: ./apps/${{ matrix.app }}/Dockerfile
           push: true
-          # Use the version from the 'create_version' job
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.app }}:${{ needs.create_version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Job 4: Deploy to Kubernetes
+  # Job 4: Deploy to Kubernetes (no changes needed here)
   deploy:
     name: Deploy to Kubernetes
     runs-on: ubuntu-latest
     needs: [create_version, build_and_push_docker]
     environment: production
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up K8s context
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
-
       - name: Set up Helm
         uses: azure/setup-helm@v4
-
       - name: Deploy with Helm
         run: |
           helm upgrade --install my-app-release ./charts/my-app \
@@ -149,4 +143,4 @@ jobs:
             --create-namespace \
             --wait \
             --set client.image.tag=${{ needs.create_version.outputs.version }} \
-            --set backend.image.tag=${{ needs.create_version.outputs.version }}
+            --set api.image.tag=${{ needs.create_version.outputs.version }}

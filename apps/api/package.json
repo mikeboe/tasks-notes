@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node src/main.ts",
-    "build": "./node_modules/.bin/esbuild src/main.ts --bundle --platform=node --external:argon2 --target=node22 --outfile=dist/main.js",
+    "build": "../../node_modules/.bin/esbuild src/main.ts --bundle --platform=node --external:argon2 --target=node22 --outfile=dist/main.js",
     "start": "node dist/main.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
