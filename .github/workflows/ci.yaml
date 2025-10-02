@@ -143,4 +143,6 @@ jobs:
                     --set api.image.tag=${{ needs.create_version.outputs.version }} \
                     --set api.env.DATABASE_URL=${{ secrets.DATABASE_URL }} \
                     --set api.env.JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }} \
-                    --set api.env.JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+                    --set api.env.JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }} \
+                    --set api.env.API_HOST=${{ secrets.API_HOST }} \
+                    --set client.env.APP_HOST=${{ secrets.CLIENT_HOST }}

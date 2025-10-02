@@ -2,12 +2,14 @@ ingress:
   name: tasks-notes-ingress
   allowOrigin: "*"
 client:
-  host: app.tasks-notes.mikeboe.com
+  host: ${APP_HOST}
   image:
     repository: ghcr.io/mikeboe/tasks-notes-client
     tag: latest
+  env:
+    VITE_API_BASE_URL: ${API_HOST}
 api:
-  host: api.tasks-notes.mikeboe.com
+  host: ${API_HOST}
   image:
     repository: ghcr.io/mikeboe/tasks-notes-api
     tag: latest
