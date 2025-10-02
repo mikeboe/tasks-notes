@@ -4,9 +4,10 @@
  */
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+  config.apiUrl|| "http://localhost:3000";
 const AUTH_API_BASE = `${API_BASE_URL}/auth`;
 
+import { config } from "@/config";
 import { type User } from "@/types/user";
 
 // Re-export the User type for convenience

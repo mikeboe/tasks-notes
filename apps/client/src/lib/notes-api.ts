@@ -1,8 +1,9 @@
 
+import { config } from "@/config";
 import { authenticatedRequest } from "./auth-api";
 import { type Note } from "@/types/index";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = config.apiUrl || "http://localhost:3000";
 const NOTES_API_BASE = `${API_BASE_URL}/notes`;
 
 export interface ApiResponse<T = any> {

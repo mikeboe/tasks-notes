@@ -1,3 +1,4 @@
+import { config } from "@/config";
 import { authenticatedRequest } from "./auth-api";
 import type { 
   Task, 
@@ -15,7 +16,7 @@ import type {
   CreateCommentRequest
 } from "@/types/index";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = config.apiUrl || "http://localhost:3000";
 const TASKS_API_BASE = `${API_BASE_URL}/tasks`;
 const STAGES_API_BASE = `${API_BASE_URL}/task-stages`;
 const TAGS_API_BASE = `${API_BASE_URL}/tags`;

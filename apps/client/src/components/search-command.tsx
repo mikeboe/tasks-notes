@@ -11,6 +11,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import { useDebounce } from "@/hooks/use-debounce"
+import { config } from "@/config"
 
 export interface SearchResult {
   id: string
@@ -49,7 +50,7 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
 
       setIsLoading(true)
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+        const API_BASE_URL = config.apiUrl || "http://localhost:3000";
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(searchQuery)}`, {
           credentials: 'include',
         })
