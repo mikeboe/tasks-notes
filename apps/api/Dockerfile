@@ -12,6 +12,7 @@ RUN addgroup --system academy && \
           adduser --system -G academy academy
 
 COPY dist /app/
+COPY /src/db/drizzle /app/src/db/drizzle
 RUN chown -R academy:academy .
 
 
