@@ -5,14 +5,14 @@ client:
   host: ${APP_HOST}
   image:
     repository: ghcr.io/mikeboe/tasks-notes-client
-    tag: latest
+    tag: 1.2.1
   env:
     VITE_API_BASE_URL: ${API_HOST}
 api:
   host: ${API_HOST}
   image:
     repository: ghcr.io/mikeboe/tasks-notes-api
-    tag: latest
+    tag: 1.2.1
   env:
     JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
     JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
