@@ -14,13 +14,13 @@ createRoot(document.getElementById("root")!).render(
     <AuthProvider>
       <BrowserRouter>
         <UserProvider>
-            <TooltipProvider>
-              <NotesProvider>
-                <FavoritesProvider>
-                  <App />
-                </FavoritesProvider>
-              </NotesProvider>
-            </TooltipProvider>
+          <TooltipProvider>
+            <NotesProvider>
+              <FavoritesProvider>
+                <App />
+              </FavoritesProvider>
+            </NotesProvider>
+          </TooltipProvider>
         </UserProvider>
       </BrowserRouter>
     </AuthProvider>

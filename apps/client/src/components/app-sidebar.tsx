@@ -17,10 +17,13 @@ import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { NavFavorites } from "./nav-favorites"
+import { NavUser } from "./nav-user"
+import { useAuth } from "@/context/NewAuthContext"
 
 // This is sample data.
 const data = {
@@ -255,6 +258,8 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
+  const { user } = useAuth()
+
   return (
     <Sidebar className="border-r-0" {...props}>
       <SidebarHeader>
@@ -269,6 +274,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* <NavWorkspaces workspaces={data.workspaces} />
         <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
+      <SidebarFooter>
+        <NavUser user={user} />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
