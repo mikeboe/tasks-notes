@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { NotesApi } from "@/lib/notes-api";
+import { AssetsApi } from "@/lib/assets-api";
 import { type Note } from "@/types/index";
 import "@blocknote/core/fonts/inter.css";
 
@@ -20,8 +21,35 @@ const NotePage = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { updateNoteTitleInTree } = useNotes();
 
-  // Creates a new editor instance.
-  const editor = useCreateBlockNote();
+  // Upload file function for BlockNote
+  const uploadFile = async (file: File): Promise<string> => {
+    const response = await AssetsApi.uploadFile(file);
+    if (response.success && response.data) {
+      return response.data.id; // Return asset ID to use with resolveFileUrl
+    }
+    throw new Error(response.error || "Failed to upload file");
+  };
+
+  // Resolve file URL function for BlockNote
+  const resolveFileUrl = async (url: string): Promise<string> => {
+    // If url is already a full URL, return it
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    // Otherwise, treat it as an asset ID and fetch the asset
+    const response = await AssetsApi.getAsset(url);
+    if (response.success && response.data) {
+      return response.data.s3Url;
+    }
+    throw new Error(response.error || "Failed to resolve file URL");
+  };
+
+  // Creates a new editor instance with upload and resolve functions
+  const editor = useCreateBlockNote({
+    uploadFile,
+    resolveFileUrl,
+  });
 
   useEffect(() => {
     if (id) {

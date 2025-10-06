@@ -4,7 +4,7 @@ import {
   assets,
   createAssetSchema,
   assetSearchSchema,
-} from "../schema/course-schema";
+} from "../schema/assets-schema";
 import { S3MultipartUploadService } from "../utils/s3-client";
 import { eq, and, desc, count } from "drizzle-orm";
 
@@ -12,7 +12,16 @@ const s3Service = new S3MultipartUploadService(
   process.env.S3_BUCKET_NAME || "uploads.rocket-ai.io"
 );
 
-export const uploadVideo = async (req: Request, res: Response) => {
+// Helper function to determine file type from mimetype
+const getFileType = (mimetype: string): "video" | "image" | "document" | "audio" | "other" => {
+  if (mimetype.startsWith("video/")) return "video";
+  if (mimetype.startsWith("image/")) return "image";
+  if (mimetype.startsWith("audio/")) return "audio";
+  if (mimetype.includes("pdf") || mimetype.includes("document") || mimetype.includes("text/")) return "document";
+  return "other";
+};
+
+export const uploadFile = async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -32,16 +41,11 @@ export const uploadVideo = async (req: Request, res: Response) => {
     const file = req.file;
     const originalFileName = file.originalname;
 
-    // Validate file type
-    if (!file.mimetype.startsWith("video/")) {
-      return res.status(400).json({
-        success: false,
-        message: "Only video files are allowed",
-      });
-    }
+    // Determine file type first
+    const fileType = getFileType(file.mimetype);
 
-    // Generate S3 key
-    const s3Key = s3Service.generateKey(originalFileName, userId);
+    // Generate S3 key with file type folder
+    const s3Key = s3Service.generateKey(originalFileName, userId, fileType);
 
     try {
       // Upload to S3 with multipart upload
@@ -59,7 +63,7 @@ export const uploadVideo = async (req: Request, res: Response) => {
         s3Url: uploadResult.location,
         fileSize: file.size,
         mimeType: file.mimetype,
-        fileType: "video" as const,
+        fileType: fileType,
         uploadStatus: "completed" as const,
         metadata: JSON.stringify({
           originalName: originalFileName,
@@ -76,18 +80,18 @@ export const uploadVideo = async (req: Request, res: Response) => {
 
       res.status(201).json({
         success: true,
-        message: "Video uploaded successfully",
+        message: "File uploaded successfully",
         data: asset,
       });
     } catch (uploadError) {
       console.error("Upload error:", uploadError);
       res.status(500).json({
         success: false,
-        message: "Failed to upload video to storage",
+        message: "Failed to upload file to storage",
       });
     }
   } catch (error) {
-    console.error("Video upload error:", error);
+    console.error("File upload error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",

@@ -10,6 +10,7 @@ import taskStagesRoutes from "./routes/task-stages";
 import tagsRoutes from "./routes/tags";
 import searchRoutes from "./routes/search";
 import teamsRoutes from "./routes/teams";
+import assetsRoutes from "./routes/assets";
 
 export const createApp = () => {
     const app = express();
@@ -44,6 +45,7 @@ export const createApp = () => {
     app.use("/task-stages", taskStagesRoutes);
     app.use("/tags", tagsRoutes);
     app.use("/search", searchRoutes);
+    app.use("/assets", assetsRoutes);
 
     // Health check
 

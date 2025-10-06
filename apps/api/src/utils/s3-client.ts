@@ -130,16 +130,18 @@ export class S3MultipartUploadService {
     }
   }
 
-  generateKey(originalFileName: string, userId: string): string {
+  generateKey(originalFileName: string, userId: string, fileType?: string): string {
     const timestamp = Date.now();
     const extension = originalFileName.split(".").pop();
     const sanitizedName = originalFileName.replace(/[^a-zA-Z0-9.-]/g, "_");
-    return `videos/${userId}/${timestamp}_${sanitizedName}`;
+    const folder = fileType || 'files';
+    return `${folder}/${userId}/${timestamp}_${sanitizedName}`;
   }
 
   private getContentType(fileName: string): string {
     const extension = fileName.split(".").pop()?.toLowerCase();
     const mimeTypes: Record<string, string> = {
+      // Video
       mp4: "video/mp4",
       avi: "video/x-msvideo",
       mov: "video/quicktime",
@@ -147,6 +149,24 @@ export class S3MultipartUploadService {
       flv: "video/x-flv",
       webm: "video/webm",
       mkv: "video/x-matroska",
+      // Image
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      svg: "image/svg+xml",
+      webp: "image/webp",
+      // Audio
+      mp3: "audio/mpeg",
+      wav: "audio/wav",
+      ogg: "audio/ogg",
+      m4a: "audio/mp4",
+      // Documents
+      pdf: "application/pdf",
+      doc: "application/msword",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      txt: "text/plain",
+      csv: "text/csv",
     };
     return mimeTypes[extension || ""] || "application/octet-stream";
   }

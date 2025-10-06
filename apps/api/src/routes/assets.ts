@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { uploadVideo, getAssets, getAsset, deleteAsset } from '../controllers/assets';
+import { uploadFile, getAssets, getAsset, deleteAsset } from '../controllers/assets';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
@@ -11,21 +11,13 @@ const upload = multer({
   limits: {
     fileSize: 1024 * 1024 * 1024, // 1GB limit
   },
-  fileFilter: (req, file, cb) => {
-    // Accept video files only
-    if (file.mimetype.startsWith('video/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only video files are allowed'));
-    }
-  },
 });
 
 // All routes require authentication
 router.use(authMiddleware);
 
-// Upload video
-router.post('/upload/video', upload.single('video'), uploadVideo);
+// Upload file (images, videos, documents, etc.)
+router.post('/upload', upload.single('file'), uploadFile);
 
 // Get all assets for authenticated user
 router.get('/', getAssets);
