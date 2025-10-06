@@ -18,6 +18,11 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface MicrosoftLoginRequest {
+  idToken: string;
+  accessToken?: string;
+}
+
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -165,6 +170,27 @@ export class AuthApi {
       return {
         success: false,
         error: error instanceof AuthApiError ? error.message : "Login failed",
+      };
+    }
+  }
+
+  /**
+   * Login with Microsoft Entra ID
+   */
+  static async loginWithMicrosoft(msCredentials: MicrosoftLoginRequest): Promise<ApiResponse> {
+    try {
+      const response = await apiRequest<User>("/microsoft/login", {
+        method: "POST",
+        body: JSON.stringify(msCredentials),
+      });
+      return {
+        success: true,
+        user: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof AuthApiError ? error.message : "Microsoft login failed",
       };
     }
   }

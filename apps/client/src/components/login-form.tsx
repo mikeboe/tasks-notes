@@ -14,17 +14,21 @@ import { useState } from "react";
 import { Loader2Icon } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useMsal } from "@azure/msal-react";
+import { loginRequest } from "@/lib/msal-config";
 
 interface LoginFormProps extends React.ComponentProps<"div"> {
   resumeId?: string;
 }
 
 export function LoginForm({ className, resumeId, ...props }: LoginFormProps) {
-  const { login, forgotPassword } = useAuth();
+  const { login, loginWithMicrosoft, forgotPassword } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [msLoading, setMsLoading] = useState(false);
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { instance } = useMsal();
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -75,6 +79,34 @@ export function LoginForm({ className, resumeId, ...props }: LoginFormProps) {
     }
   };
 
+  const handleMicrosoftLogin = async () => {
+    setMsLoading(true);
+    try {
+      const loginResponse = await instance.loginPopup(loginRequest);
+
+      if (loginResponse.idToken) {
+        const result = await loginWithMicrosoft(loginResponse.idToken, loginResponse.accessToken);
+
+        if (result.success) {
+          toast.success("Microsoft login successful!");
+          const from = location.state?.from || '/';
+          navigate(from, { replace: true });
+        } else {
+          toast.error(result.error || "Microsoft login failed. Please try again.");
+        }
+      }
+    } catch (error: any) {
+      if (error.errorCode === "user_cancelled") {
+        toast.error("Login cancelled");
+      } else {
+        toast.error("Microsoft login failed. Please try again.");
+      }
+      console.error("Microsoft login error:", error);
+    } finally {
+      setMsLoading(false);
+    }
+  };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -113,6 +145,35 @@ export function LoginForm({ className, resumeId, ...props }: LoginFormProps) {
               <div className="flex flex-col gap-3">
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? <Loader2Icon className="animate-spin" /> : "Login"}
+                </Button>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleMicrosoftLogin}
+                  disabled={msLoading || loading}
+                >
+                  {msLoading ? (
+                    <Loader2Icon className="animate-spin mr-2" />
+                  ) : (
+                    <svg className="mr-2 h-4 w-4" viewBox="0 0 21 21">
+                      <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                      <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                      <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                      <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                    </svg>
+                  )}
+                  Microsoft
                 </Button>
               </div>
             </div>

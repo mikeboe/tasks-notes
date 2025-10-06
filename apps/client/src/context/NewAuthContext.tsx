@@ -23,6 +23,7 @@ export interface AuthState {
 interface AuthContextType extends AuthState {
   // Authentication actions
   login: (email: string, password: string) => Promise<ApiResponse>;
+  loginWithMicrosoft: (idToken: string, accessToken?: string) => Promise<ApiResponse>;
   register: (
     email: string,
     password: string,
@@ -87,6 +88,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           return {
             success: false,
             error: response.success === false ? response.error : "Login failed",
+          };
+        }
+      } catch (error) {
+        updateAuthState({ isLoading: false });
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred",
+        };
+      }
+    },
+    [setUser, updateAuthState]
+  );
+
+  // Microsoft login function
+  const loginWithMicrosoft = useCallback(
+    async (idToken: string, accessToken?: string): Promise<ApiResponse> => {
+      updateAuthState({ isLoading: true });
+
+      try {
+        const response = await AuthApi.loginWithMicrosoft({ idToken, accessToken });
+
+        if (response.success && response.user) {
+          setUser(response.user);
+          return { success: true, data: response };
+        } else {
+          updateAuthState({ isLoading: false });
+          return {
+            success: false,
+            error: response.success === false ? response.error : "Microsoft login failed",
           };
         }
       } catch (error) {
@@ -288,6 +321,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const contextValue: AuthContextType = {
     ...authState,
     login,
+    loginWithMicrosoft,
     register,
     logout,
     verifyEmail,

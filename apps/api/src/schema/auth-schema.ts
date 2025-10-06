@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: varchar('email', { length: 255 }).unique().notNull(),
-  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+  passwordHash: varchar('password_hash', { length: 255 }),
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
   role: varchar('role', { length: 20 }).default('admin').notNull(),
@@ -12,6 +12,9 @@ export const users = pgTable('users', {
   emailVerificationToken: varchar('email_verification_token', { length: 255 }),
   passwordResetToken: varchar('password_reset_token', { length: 255 }),
   passwordResetExpires: timestamp('password_reset_expires'),
+  microsoftId: varchar('microsoft_id', { length: 255 }),
+  authProvider: varchar('auth_provider', { length: 50 }).default('local').notNull(),
+  profilePicture: varchar('profile_picture', { length: 500 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   lastLogin: timestamp('last_login'),
@@ -126,6 +129,11 @@ export const changePasswordSchema = z.object({
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
     'Password must contain uppercase, lowercase, number and special character'
   ),
+});
+
+export const microsoftLoginSchema = z.object({
+  idToken: z.string().min(1, 'ID token is required'),
+  accessToken: z.string().optional(),
 });
 
 // Type exports

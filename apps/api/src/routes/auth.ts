@@ -17,14 +17,16 @@ import {
   getPendingInvitations,
   changePassword,
   generateApiKeyForUser,
-  getApiKey
+  getApiKey,
+  microsoftLogin
 } from '../controllers/auth';
 
 const router = Router();
 
-// Protected routes - Registration only for SuperAdmin
+// Public authentication routes
 router.post('/register', authLimiter, register);
 router.post('/login', loginLimiter, login);
+router.post('/microsoft/login', loginLimiter, microsoftLogin);
 router.post('/refresh', refresh);
 router.post('/verify-email', verifyEmail);
 router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);

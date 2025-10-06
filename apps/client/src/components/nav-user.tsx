@@ -46,7 +46,7 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user?.avatar?.url} alt={user?.firstName} />
+                <AvatarImage src={user?.profilePicture || user?.avatar?.url} alt={user?.firstName} />
                 <AvatarFallback className="rounded-lg">{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">

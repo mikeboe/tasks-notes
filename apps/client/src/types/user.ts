@@ -26,6 +26,7 @@ export type User = {
   lastName: string;
   role: string;
   emailVerified: boolean;
+  profilePicture?: string | null;
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;

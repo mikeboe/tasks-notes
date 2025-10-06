@@ -1,20 +1,21 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
-import { 
-  users, 
-  refreshTokens, 
+import {
+  users,
+  refreshTokens,
   userInvitations,
   apiKeys,
-  registerSchema, 
-  loginSchema, 
-  resetPasswordSchema, 
-  forgotPasswordSchema, 
+  registerSchema,
+  loginSchema,
+  resetPasswordSchema,
+  forgotPasswordSchema,
   verifyEmailSchema,
   inviteUserSchema,
   acceptUserInvitationSchema,
   updateUserRoleSchema,
   getUsersSearchSchema,
-  changePasswordSchema
+  changePasswordSchema,
+  microsoftLoginSchema
 } from '../schema/auth-schema';
 import { eq, and, gt, isNull, like, or } from 'drizzle-orm';
 import { 
@@ -108,6 +109,13 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    // Check if password exists (Microsoft users don't have passwords)
+    if (!user[0].passwordHash) {
+      return res.status(401).json({
+        message: 'This account uses Microsoft login. Please sign in with Microsoft.'
+      });
+    }
+
     // Verify password
     const isValidPassword = await verifyPassword(user[0].passwordHash, password);
     if (!isValidPassword) {
@@ -142,7 +150,8 @@ export const login = async (req: Request, res: Response) => {
       firstName: user[0].firstName,
       lastName: user[0].lastName,
       role: user[0].role,
-      emailVerified: user[0].emailVerified
+      emailVerified: user[0].emailVerified,
+      profilePicture: user[0].profilePicture
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -252,6 +261,7 @@ export const me = async (req: Request, res: Response) => {
       lastName: req.user.lastName,
       role: req.user.role,
       emailVerified: req.user.emailVerified,
+      profilePicture: req.user.profilePicture,
       createdAt: req.user.createdAt
     });
   } catch (error) {
@@ -673,6 +683,14 @@ export const changePassword = async (req: Request, res: Response) => {
 
     const { currentPassword, newPassword } = validation.data;
 
+    // Check if user has a password (Microsoft users don't)
+    if (!req.user.passwordHash) {
+      return res.status(400).json({
+        success: false,
+        message: 'This account uses Microsoft login and does not have a password to change'
+      });
+    }
+
     // Verify current password
     const isValidPassword = await verifyPassword(req.user.passwordHash, currentPassword);
     if (!isValidPassword) {
@@ -794,6 +812,165 @@ export const getApiKey = async (req: Request, res: Response) => {
     console.error('Get API key error:', error);
     res.status(500).json({
       success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+export const microsoftLogin = async (req: Request, res: Response) => {
+  try {
+    const validation = microsoftLoginSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: validation.error.issues
+      });
+    }
+
+    const { idToken, accessToken: msAccessToken } = validation.data;
+
+    // Decode the Microsoft ID token (JWT)
+    const jwt = require('jsonwebtoken');
+    const decodedToken = jwt.decode(idToken) as any;
+
+    if (!decodedToken) {
+      return res.status(401).json({
+        message: 'Invalid Microsoft token'
+      });
+    }
+
+    // Extract user information from the token
+    const microsoftId = decodedToken.oid || decodedToken.sub; // Object ID or Subject
+    const email = decodedToken.email || decodedToken.preferred_username;
+    const firstName = decodedToken.given_name || decodedToken.name?.split(' ')[0] || 'User';
+    const lastName = decodedToken.family_name || decodedToken.name?.split(' ').slice(1).join(' ') || '';
+
+    // Fetch profile picture from Microsoft Graph API if msAccessToken is provided
+    let profilePicture: string | null = null;
+    if (msAccessToken) {
+      try {
+        const axios = require('axios');
+
+        // Get the photo metadata first to check if it exists
+        const photoMetaResponse = await axios.get('https://graph.microsoft.com/v1.0/me/photo', {
+          headers: { Authorization: `Bearer ${msAccessToken}` }
+        });
+
+        if (photoMetaResponse.status === 200) {
+          // Fetch the actual photo
+          const photoResponse = await axios.get('https://graph.microsoft.com/v1.0/me/photo/$value', {
+            headers: { Authorization: `Bearer ${msAccessToken}` },
+            responseType: 'arraybuffer'
+          });
+
+          if (photoResponse.status === 200) {
+            // Convert to base64 data URL
+            const base64Image = Buffer.from(photoResponse.data, 'binary').toString('base64');
+            const contentType = photoResponse.headers['content-type'] || 'image/jpeg';
+            profilePicture = `data:${contentType};base64,${base64Image}`;
+          }
+        }
+      } catch (photoError: any) {
+        // Photo might not exist or Graph API call failed - continue without it
+        console.log('Could not fetch profile picture:', photoError.message);
+      }
+    }
+
+    // Check if user exists by Microsoft ID
+    let user = await db.select()
+      .from(users)
+      .where(eq(users.microsoftId, microsoftId))
+      .limit(1);
+
+    if (!user.length) {
+      // Check if user exists by email
+      user = await db.select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (user.length) {
+        // Link existing email account to Microsoft account
+        await db.update(users)
+          .set({
+            microsoftId,
+            authProvider: 'microsoft',
+            emailVerified: true,
+            profilePicture: profilePicture || user[0].profilePicture,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, user[0].id));
+
+        // Refresh user data
+        user = await db.select()
+          .from(users)
+          .where(eq(users.id, user[0].id))
+          .limit(1);
+      } else {
+        // Create new user with Microsoft account
+        const newUser = await db.insert(users).values({
+          email,
+          microsoftId,
+          firstName,
+          lastName,
+          emailVerified: true,
+          authProvider: 'microsoft',
+          profilePicture,
+          role: 'admin'
+        }).returning();
+
+        user = newUser;
+      }
+    } else {
+      // Update profile picture if we got a new one
+      if (profilePicture) {
+        await db.update(users)
+          .set({
+            profilePicture,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, user[0].id));
+
+        // Refresh user data
+        user = await db.select()
+          .from(users)
+          .where(eq(users.id, user[0].id))
+          .limit(1);
+      }
+    }
+
+    // Generate tokens
+    const accessToken = generateAccessToken(user[0].id);
+    const refreshToken = generateRefreshToken();
+    const refreshTokenHash = hashRefreshToken(refreshToken);
+
+    // Store refresh token in database
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    await db.insert(refreshTokens).values({
+      userId: user[0].id,
+      tokenHash: refreshTokenHash,
+      expiresAt
+    });
+
+    // Update last login
+    await db.update(users).set({ lastLogin: new Date() }).where(eq(users.id, user[0].id));
+
+    // Set cookies
+    res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); // 15 minutes
+    res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
+
+    res.json({
+      id: user[0].id,
+      email: user[0].email,
+      firstName: user[0].firstName,
+      lastName: user[0].lastName,
+      role: user[0].role,
+      emailVerified: user[0].emailVerified,
+      profilePicture: user[0].profilePicture
+    });
+  } catch (error) {
+    console.error('Microsoft login error:', error);
+    res.status(500).json({
       message: 'Internal server error'
     });
   }
