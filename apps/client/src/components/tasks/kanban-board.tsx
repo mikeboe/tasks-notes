@@ -31,20 +31,20 @@ import { TaskDetailModal } from "./task-detail-modal";
 
 // Convert TaskStage to Column format for DnD
 function stageToColumn(stage: TaskStage): Column {
-  return {
-    id: stage.id,
-    title: stage.name
-  };
+    return {
+        id: stage.id,
+        title: stage.name
+    };
 }
 
 // Convert TaskType to Task format for DnD
 function taskToTask(task: TaskType): Task {
-  return {
-    id: task.id,
-    columnId: task.statusId,
-    content: task.title,
-    task: task
-  };
+    return {
+        id: task.id,
+        columnId: task.statusId,
+        content: task.title,
+        task: task
+    };
 }
 
 export type ColumnId = string;
@@ -53,14 +53,15 @@ export function KanbanBoard() {
     const [stages, setStages] = useState<TaskStage[]>([]);
     const [allTasks, setAllTasks] = useState<TaskType[]>([]);
     const [users, setUsers] = useState<User[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [isFilterLoading, setIsFilterLoading] = useState(false);
+
     // Filters
     const [filters, setFilters] = useState<TaskFilters>({});
-    
+
     // Modal
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-    
+
     // DnD State (converted from API data)
     const [columns, setColumns] = useState<Column[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -76,61 +77,79 @@ export function KanbanBoard() {
             coordinateGetter: coordinateGetter,
         })
     );
-    
+
     // Load initial data
     useEffect(() => {
         loadData();
     }, [filters]);
-    
+
     // Convert API data to DnD format
     useEffect(() => {
         const sortedStages = [...stages].sort((a, b) => a.order - b.order);
         setColumns(sortedStages.map(stageToColumn));
         setTasks(allTasks.map(taskToTask));
     }, [stages, allTasks]);
-    
+
     const loadData = async () => {
-        setIsLoading(true);
+        const isInitial = isInitialLoading;
+        if (isInitial) {
+            setIsInitialLoading(true);
+        } else {
+            setIsFilterLoading(true);
+        }
+
         try {
             const [tasksResponse, stagesResponse, usersResponse] = await Promise.all([
                 TasksApi.getTasks(filters),
-                TasksApi.getTaskStages(),
-                TasksApi.getUsers()
+                isInitial ? TasksApi.getTaskStages() : Promise.resolve({ success: true, data: stages }),
+                isInitial ? TasksApi.getUsers() : Promise.resolve({ success: true, data: users })
             ]);
-            
+
             if (tasksResponse.success && tasksResponse.data) {
                 setAllTasks(tasksResponse.data);
             } else {
                 toast.error(tasksResponse.error || 'Failed to load tasks');
             }
-            
-            if (stagesResponse.success && stagesResponse.data) {
+
+            if (isInitial && stagesResponse.success && stagesResponse.data) {
                 setStages(stagesResponse.data);
-            } else {
-                toast.error(stagesResponse.error || 'Failed to load stages');
+            } else if (isInitial && !stagesResponse.success) {
+                toast.error(
+                    "error" in stagesResponse && stagesResponse.error
+                        ? stagesResponse.error
+                        : 'Failed to load stages'
+                );
             }
 
-            if (usersResponse.success && usersResponse.data) {
+            if (isInitial && usersResponse.success && usersResponse.data) {
                 setUsers(usersResponse.data);
-            } else {
-                toast.error(usersResponse.error || 'Failed to load users');
+            } else if (isInitial && !usersResponse.success) {
+                toast.error(
+                    "error" in usersResponse && usersResponse.error
+                        ? usersResponse.error
+                        : 'Failed to load users'
+                );
             }
         } catch (error) {
             toast.error('Failed to load kanban data');
         } finally {
-            setIsLoading(false);
+            if (isInitial) {
+                setIsInitialLoading(false);
+            } else {
+                setIsFilterLoading(false);
+            }
         }
     };
-    
+
     const handleTaskClick = (taskId: string) => {
         setSelectedTaskId(taskId);
     };
-    
+
     const handleCompletionToggle = async (taskId: string, completed: boolean) => {
         try {
             const response = await TasksApi.updateTask(taskId, { is_completed: completed });
             if (response.success) {
-                setAllTasks(prev => prev.map(task => 
+                setAllTasks(prev => prev.map(task =>
                     task.id === taskId ? { ...task, isCompleted: completed } : task
                 ));
                 toast.success(completed ? 'Task completed' : 'Task marked incomplete');
@@ -141,12 +160,12 @@ export function KanbanBoard() {
             toast.error('Failed to update task');
         }
     };
-    
+
     const handleTaskDrop = async (taskId: string, newStatusId: string) => {
         try {
             const response = await TasksApi.updateTask(taskId, { status_id: newStatusId });
             if (response.success) {
-                setAllTasks(prev => prev.map(task => 
+                setAllTasks(prev => prev.map(task =>
                     task.id === taskId ? { ...task, statusId: newStatusId } : task
                 ));
                 toast.success('Task moved successfully');
@@ -160,19 +179,19 @@ export function KanbanBoard() {
             loadData();
         }
     };
-    
+
     const handleTaskCreated = async (newTask: TaskType) => {
         // Optimistically add the new task to the state
         setAllTasks(prev => [...prev, newTask]);
     };
-    
+
     const handleTaskUpdated = async (updatedTask: TaskType) => {
         // Optimistically update the task in state
-        setAllTasks(prev => prev.map(task => 
+        setAllTasks(prev => prev.map(task =>
             task.id === updatedTask.id ? updatedTask : task
         ));
     };
-    
+
     const handleModalClose = async (shouldRefresh?: boolean) => {
         setSelectedTaskId(null);
         if (shouldRefresh) {
@@ -283,14 +302,14 @@ export function KanbanBoard() {
         },
     };
 
-    if (isLoading) {
+    if (isInitialLoading) {
         return (
             <div className="flex items-center justify-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin" />
             </div>
         );
     }
-    
+
     return (
         <div className="flex flex-col h-full space-y-4">
             {/* Filters and Controls */}
@@ -299,9 +318,10 @@ export function KanbanBoard() {
                     <div className="flex items-center gap-2">
                         <Filter className="h-4 w-4" />
                         <span className="text-sm font-medium">Filters:</span>
+
                     </div>
-                    
-                    <Select value={filters.assignee_id || 'all'} onValueChange={(value) => 
+
+                    <Select value={filters.assignee_id || 'all'} onValueChange={(value) =>
                         setFilters(prev => ({ ...prev, assignee_id: value === 'all' ? undefined : value }))}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Assigned to" />
@@ -315,8 +335,8 @@ export function KanbanBoard() {
                             ))}
                         </SelectContent>
                     </Select>
-                    
-                    <Select value={filters.priority || 'all'} onValueChange={(value) => 
+
+                    <Select value={filters.priority || 'all'} onValueChange={(value) =>
                         setFilters(prev => ({ ...prev, priority: value === 'all' ? undefined : value as TaskFilters['priority'] }))}>
                         <SelectTrigger className="w-[140px]">
                             <SelectValue placeholder="Priority" />
@@ -328,14 +348,19 @@ export function KanbanBoard() {
                             <SelectItem value="high">High</SelectItem>
                         </SelectContent>
                     </Select>
+                    <div>
+                        {isFilterLoading && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                    </div>
                 </div>
-                
+
                 <Button onClick={() => setSelectedTaskId('new')}>
                     <Plus className="h-4 w-4 mr-2" />
                     New Task
                 </Button>
             </div>
-            
+
             {/* Kanban Board */}
             <div className="flex-1 overflow-hidden">
                 <DndContext
@@ -361,35 +386,35 @@ export function KanbanBoard() {
                         </SortableContext>
                     </BoardContainer>
 
-                {"document" in window &&
-                    createPortal(
-                        <DragOverlay>
-                            {activeColumn && (
-                                <BoardColumn
-                                    isOverlay
-                                    column={activeColumn}
-                                    tasks={tasks.filter(
-                                        (task) => task.columnId === activeColumn.id
-                                    )}
-                                />
-                            )}
-                            {activeTask && <TaskCard task={activeTask} isOverlay />}
-                        </DragOverlay>,
-                        document.body
-                    )}
-            </DndContext>
-            
-            {/* Task Detail Modal */}
-            <TaskDetailModal 
-                taskId={selectedTaskId} 
-                onClose={handleModalClose}
-                onTaskCreated={handleTaskCreated}
-                onTaskUpdated={handleTaskUpdated}
-            />
-        </div>
+                    {"document" in window &&
+                        createPortal(
+                            <DragOverlay>
+                                {activeColumn && (
+                                    <BoardColumn
+                                        isOverlay
+                                        column={activeColumn}
+                                        tasks={tasks.filter(
+                                            (task) => task.columnId === activeColumn.id
+                                        )}
+                                    />
+                                )}
+                                {activeTask && <TaskCard task={activeTask} isOverlay />}
+                            </DragOverlay>,
+                            document.body
+                        )}
+                </DndContext>
+
+                {/* Task Detail Modal */}
+                <TaskDetailModal
+                    taskId={selectedTaskId}
+                    onClose={handleModalClose}
+                    onTaskCreated={handleTaskCreated}
+                    onTaskUpdated={handleTaskUpdated}
+                />
+            </div>
         </div>
     );
-    
+
 
     function onDragStart(event: DragStartEvent) {
         if (!hasDraggableData(event.active)) return;
@@ -464,10 +489,10 @@ export function KanbanBoard() {
                 ) {
                     const newColumnId = overTask.columnId;
                     activeTask.columnId = newColumnId;
-                    
+
                     // API call to update task status
                     handleTaskDrop(activeId.toString(), newColumnId);
-                    
+
                     return arrayMove(tasks, activeIndex, overIndex - 1);
                 }
 
@@ -485,10 +510,10 @@ export function KanbanBoard() {
                 if (activeTask && activeTask.columnId !== overId) {
                     const newColumnId = overId as ColumnId;
                     activeTask.columnId = newColumnId;
-                    
+
                     // API call to update task status
                     handleTaskDrop(activeId.toString(), newColumnId);
-                    
+
                     return arrayMove(tasks, activeIndex, activeIndex);
                 }
                 return tasks;

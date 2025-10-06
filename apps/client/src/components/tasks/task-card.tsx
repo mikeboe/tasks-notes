@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { cva } from "class-variance-authority";
-import { User, MessageSquare, Paperclip } from "lucide-react";
+import { User, MessageSquare, ExternalLink, GripVertical } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import type { Task as TaskType } from "@/types";
@@ -77,15 +77,7 @@ export function TaskCard({ task, isOverlay, onTaskClick }: TaskCardProps) {
   const remainingCount = Math.max(0, assignees.length - 3);
 
   const commentsCount = taskData?.comments?.length || 0;
-  const attachedNotesCount = taskData?.linked_notes?.length || 0;
-  
-  // Debug logging to check what data we're receiving
-  if (process.env.NODE_ENV === 'development' && taskData?.id) {
-    console.log(`Task ${taskData.title}: comments=${commentsCount}, linked_notes=${attachedNotesCount}`, {
-      comments: taskData.comments,
-      linked_notes: taskData.linked_notes
-    });
-  }
+  const linkedNotes = taskData?.linked_notes || [];
 
   return (
     <Card
@@ -102,29 +94,36 @@ export function TaskCard({ task, isOverlay, onTaskClick }: TaskCardProps) {
       )}
     >
       {/* Card Header */}
-      <div className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6">
-        <h3 
-          className="text-base font-semibold cursor-pointer" 
-          onClick={handleTitleClick}
-          
+      <div className="@container/card-header flex items-start gap-2 px-6">
+        <div className="flex-1 grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5">
+          <h3
+            className="text-base font-semibold cursor-pointer"
+            onClick={handleTitleClick}
+
+          >
+            {taskData?.title || task.content}
+          </h3>
+          {taskData?.notes && (
+            <p className="text-muted-foreground text-sm">
+              {taskData.notes.length > 60
+                ? taskData.notes.substring(0, 60) + ".."
+                : taskData.notes
+              }
+            </p>
+          )}
+        </div>
+        <div
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors mt-0.5"
         >
-          {taskData?.title || task.content}
-        </h3>
-        {taskData?.notes && (
-          <p className="text-muted-foreground text-sm">
-            {taskData.notes.length > 60 
-              ? taskData.notes.substring(0, 60) + ".."
-              : taskData.notes
-            }
-          </p>
-        )}
+          <GripVertical className="h-5 w-5" />
+        </div>
       </div>
 
       {/* Card Content */}
-      <div className="px-6 space-y-4" {...listeners}>
-        {/* Assignees and Progress */}
-        <div className="text-muted-foreground flex items-center justify-between text-sm">
-          {/* Assignees */}
+      <div className="px-6 space-y-4">
+        {/* Assignees */}
+        <div className="text-muted-foreground flex items-center text-sm">
           <div className="flex -space-x-2 overflow-hidden">
             {visibleAssignees.map((assignee) => (
               <Avatar key={assignee.id} className="relative flex size-8 shrink-0 overflow-hidden rounded-full border-background border-2">
@@ -141,47 +140,49 @@ export function TaskCard({ task, isOverlay, onTaskClick }: TaskCardProps) {
               </Avatar>
             )}
           </div>
-          
-          {/* Progress Circle - Mock 10% for now */}
-          <div className="flex items-center gap-2 rounded-lg border p-1">
-            <div className="relative size-4">
-              <svg className="size-full -rotate-90" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="18" cy="18" r="16" fill="none" className="stroke-current text-gray-200 dark:text-neutral-700" strokeWidth="2"></circle>
-                <circle cx="18" cy="18" r="16" fill="none" className="stroke-current" strokeWidth="2" strokeDasharray="100.53096491487338" strokeDashoffset="90.47786842338604" strokeLinecap="round"></circle>
-              </svg>
-            </div>
-            10%
-          </div>
         </div>
 
         {/* Separator */}
         <div className="bg-border shrink-0 h-px w-full"></div>
 
-        {/* Bottom section with priority, comments, and notes */}
+        {/* Bottom section with priority and comments */}
         <div className="text-muted-foreground flex items-center justify-between text-sm">
           {/* Priority Badge */}
-          <Badge 
-            variant="outline" 
+          <Badge
+            variant="outline"
             className="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 capitalize"
           >
             {priority}
           </Badge>
-          
-          {/* Comments and Notes count */}
-          <div className="flex items-center gap-3">
-            {/* Attached Notes count */}
-            <div className="flex items-center gap-1">
-              <Paperclip className="h-4 w-4" aria-hidden="true" />
-              <span>{attachedNotesCount}</span>
-            </div>
-            
-            {/* Comments count */}
-            <div className="flex items-center gap-1">
-              <MessageSquare className="h-4 w-4" aria-hidden="true" />
-              <span>{commentsCount}</span>
-            </div>
+
+          {/* Comments count */}
+          <div className="flex items-center gap-1">
+            <MessageSquare className="h-4 w-4" aria-hidden="true" />
+            <span>{commentsCount}</span>
           </div>
         </div>
+
+        {/* Linked Notes */}
+        {linkedNotes.length > 0 && (
+          <>
+            <div className="bg-border shrink-0 h-px w-full"></div>
+            <div className="space-y-1.5">
+              {linkedNotes.map((note) => (
+                <a
+                  key={note.id}
+                  href={`/notes/${note.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="h-3 w-3 shrink-0 group-hover:text-primary" />
+                  <span className="truncate">{note.title}</span>
+                </a>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
     </Card>

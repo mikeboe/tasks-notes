@@ -7,7 +7,7 @@ export const users = pgTable('users', {
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
-  role: varchar('role', { length: 20 }).default('student').notNull(),
+  role: varchar('role', { length: 20 }).default('admin').notNull(),
   emailVerified: boolean('email_verified').default(false).notNull(),
   emailVerificationToken: varchar('email_verification_token', { length: 255 }),
   passwordResetToken: varchar('password_reset_token', { length: 255 }),
