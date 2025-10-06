@@ -136,15 +136,7 @@ export const search = async (req: Request, res: Response) => {
         name: tags.name,
       })
       .from(tags)
-      .where(
-        and(
-          or(
-            eq(tags.organizationId, null), // Personal tags
-            // We could add organization-based search here if needed
-          ),
-          ilike(tags.name, searchTerm)
-        )
-      )
+      .where(ilike(tags.name, searchTerm))
       .limit(10);
 
     for (const tag of tagResults) {
