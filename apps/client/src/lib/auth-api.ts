@@ -299,6 +299,52 @@ export class AuthApi {
       };
     }
   }
+
+  /**
+   * Generate a new API key for the user
+   */
+  static async generateApiKey(): Promise<ApiResponse & { apiKey?: string }> {
+    try {
+      const response = await apiRequest<{ success: boolean; apiKey: string; message: string }>("/generate-api-key", {
+        method: "POST",
+      });
+      return {
+        success: true,
+        apiKey: response.apiKey,
+        message: response.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof AuthApiError ? error.message : "Failed to generate API key",
+      };
+    }
+  }
+
+  /**
+   * Get API key information for the user
+   */
+  static async getApiKey(): Promise<ApiResponse & { hasApiKey?: boolean; keyInfo?: any }> {
+    try {
+      const response = await apiRequest<{
+        success: boolean;
+        hasApiKey?: boolean;
+        keyInfo?: any;
+        message: string
+      }>("/api-key");
+      return {
+        success: true,
+        hasApiKey: response.hasApiKey,
+        keyInfo: response.keyInfo,
+        message: response.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof AuthApiError ? error.message : "Failed to get API key",
+      };
+    }
+  }
 }
 
 /**
