@@ -2,9 +2,13 @@ import { HomeSearch } from "@/components/home-search"
 import { AssignedTasksSection } from "@/components/assigned-tasks-section"
 import { RecentNotesSection } from "@/components/recent-notes-section"
 import { useAuth } from "@/context/NewAuthContext"
+import { useTeamContext } from "@/hooks/use-team-context"
+import { useTeams } from "@/context/TeamContext"
 
 const Index = () => {
   const { user } = useAuth()
+  const { teamId } = useTeamContext()
+  const { teams } = useTeams()
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -23,6 +27,8 @@ const Index = () => {
     return "there"
   }
 
+  const currentTeam = teamId ? teams.find(t => t.id === teamId) : null
+
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       {/* Greeting Section */}
@@ -31,7 +37,9 @@ const Index = () => {
           {getGreeting()}, {getUserName()}!
         </h1>
         <p className="text-muted-foreground">
-          Welcome back to your workspace. Here's what's happening today.
+          {currentTeam
+            ? `Welcome to ${currentTeam.name}. Here's what's happening today.`
+            : "Welcome back to your personal workspace. Here's what's happening today."}
         </p>
       </div>
 

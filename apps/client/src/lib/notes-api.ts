@@ -56,9 +56,10 @@ async function apiRequest<T>(
 }
 
 export class NotesApi {
-  static async getNotes(): Promise<ApiResponse<Note[]>> {
+  static async getNotes(teamId?: string | null): Promise<ApiResponse<Note[]>> {
     try {
-      const notes = await apiRequest<Note[]>("/");
+      const queryParams = teamId ? `?teamId=${teamId}` : '';
+      const notes = await apiRequest<Note[]>(`/${queryParams}`);
       return { success: true, data: notes };
     } catch (error) {
       return { success: false, error: error instanceof NotesApiError ? error.message : "Failed to get notes" };
@@ -74,9 +75,10 @@ export class NotesApi {
     }
   }
 
-  static async createNote(noteData: Partial<Note>): Promise<ApiResponse<Note>> {
+  static async createNote(noteData: Partial<Note>, teamId?: string | null): Promise<ApiResponse<Note>> {
     try {
-      const newNote = await apiRequest<Note>("/", {
+      const queryParams = teamId ? `?teamId=${teamId}` : '';
+      const newNote = await apiRequest<Note>(`/${queryParams}`, {
         method: "POST",
         body: JSON.stringify(noteData),
       });
@@ -184,9 +186,13 @@ export class NotesApi {
     }
   }
 
-  static async getRecentNotes(limit: number = 5): Promise<ApiResponse<Note[]>> {
+  static async getRecentNotes(limit: number = 5, teamId?: string | null): Promise<ApiResponse<Note[]>> {
     try {
-      const recentNotes = await apiRequest<Note[]>(`/recent?limit=${limit}`);
+      const queryParams = new URLSearchParams({ limit: limit.toString() });
+      if (teamId) {
+        queryParams.append('teamId', teamId);
+      }
+      const recentNotes = await apiRequest<Note[]>(`/recent?${queryParams.toString()}`);
       return { success: true, data: recentNotes };
     } catch (error) {
       return { success: false, error: error instanceof NotesApiError ? error.message : "Failed to get recent notes" };

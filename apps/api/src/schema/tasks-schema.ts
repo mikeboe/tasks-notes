@@ -1,6 +1,7 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, boolean, type PgTableWithColumns } from 'drizzle-orm/pg-core';
 import { users } from './auth-schema';
 import { notes } from './notes-schema';
+import { teams } from './teams-schema';
 import { z } from 'zod';
 
 // Task Stages (Columns in Kanban board)
@@ -8,7 +9,7 @@ export const taskStages: PgTableWithColumns<any> = pgTable('task_stages', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 100 }).notNull(),
   order: integer('order').notNull().default(0),
-  organizationId: uuid('organization_id'), // Can be null for user-specific stages
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }), // Can be null for user-specific stages
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -24,7 +25,7 @@ export const tasks: PgTableWithColumns<any> = pgTable('tasks', {
   notes: text('notes'),
   startDate: timestamp('start_date'),
   endDate: timestamp('end_date'),
-  organizationId: uuid('organization_id'), // Can be null for personal tasks
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }), // Can be null for personal tasks
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -33,7 +34,7 @@ export const tasks: PgTableWithColumns<any> = pgTable('tasks', {
 export const tags: PgTableWithColumns<any> = pgTable('tags', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 100 }).notNull(),
-  organizationId: uuid('organization_id'), // Can be null for personal tags
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }), // Can be null for personal tags
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

@@ -242,9 +242,10 @@ export class TasksApi {
   }
 
   // Get tasks assigned to current user
-  static async getAssignedTasks(): Promise<ApiResponse<Task[]>> {
+  static async getAssignedTasks(teamId?: string | null): Promise<ApiResponse<Task[]>> {
     try {
-      const tasks = await apiRequest<Task[]>('/assigned');
+      const queryParams = teamId ? `?teamId=${teamId}` : '';
+      const tasks = await apiRequest<Task[]>(`/assigned${queryParams}`);
       return { success: true, data: tasks };
     } catch (error) {
       return { success: false, error: error instanceof TasksApiError ? error.message : "Failed to get assigned tasks" };

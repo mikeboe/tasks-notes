@@ -1,6 +1,7 @@
 
 import { pgTable, uuid, varchar, text, timestamp, integer, boolean, type PgTableWithColumns, unique } from 'drizzle-orm/pg-core';
 import { users } from './auth-schema';
+import { teams } from './teams-schema';
 import { z } from 'zod';
 
 export const notes: PgTableWithColumns<any> = pgTable('notes', {
@@ -9,6 +10,7 @@ export const notes: PgTableWithColumns<any> = pgTable('notes', {
   content: text('content'),
   searchableContent: text('searchable_content'), // Plain text version for searching
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }),
   parentId: uuid('parent_id').references(() => notes.id, { onDelete: 'cascade' }),
   order: integer('order').notNull().default(0),
   archived: boolean('archived').notNull().default(false),

@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
-import { 
-  tasks, 
-  taskStages, 
-  taskAssignees, 
-  taskTags, 
+import {
+  tasks,
+  taskStages,
+  taskAssignees,
+  taskTags,
   taskComments,
   taskChecklistItems,
   taskLinkedNotes,
@@ -16,7 +16,7 @@ import {
 } from '../schema/tasks-schema';
 import { users } from '../schema/auth-schema';
 import { notes } from '../schema/notes-schema';
-import { eq, and, inArray, desc, asc } from 'drizzle-orm';
+import { eq, and, inArray, desc, asc, isNull } from 'drizzle-orm';
 
 // Get all tasks with optional filters
 export const getTasks = async (req: Request, res: Response) => {
@@ -36,33 +36,22 @@ export const getTasks = async (req: Request, res: Response) => {
     }
 
     const { assignee_id, priority, status_id } = validation.data;
-
-    // Base query - get tasks created by user or assigned to user
-    let userTasksQuery = db
-      .select({
-        id: tasks.id,
-        title: tasks.title,
-        isCompleted: tasks.isCompleted,
-        createdById: tasks.createdById,
-        priority: tasks.priority,
-        statusId: tasks.statusId,
-        notes: tasks.notes,
-        startDate: tasks.startDate,
-        endDate: tasks.endDate,
-        organizationId: tasks.organizationId,
-        createdAt: tasks.createdAt,
-        updatedAt: tasks.updatedAt,
-      })
-      .from(tasks)
-      .where(eq(tasks.createdById, req.user.id));
+    const teamId = req.query.teamId as string | undefined;
 
     // Apply filters
     const conditions = [eq(tasks.createdById, req.user.id)];
-    
+
+    // Filter by teamId: null for personal tasks, specific teamId for team tasks
+    if (teamId) {
+      conditions.push(eq(tasks.teamId, teamId));
+    } else {
+      conditions.push(isNull(tasks.teamId));
+    }
+
     if (priority) {
       conditions.push(eq(tasks.priority, priority));
     }
-    
+
     if (status_id) {
       conditions.push(eq(tasks.statusId, status_id));
     }
@@ -78,7 +67,7 @@ export const getTasks = async (req: Request, res: Response) => {
         notes: tasks.notes,
         startDate: tasks.startDate,
         endDate: tasks.endDate,
-        organizationId: tasks.organizationId,
+        teamId: tasks.teamId,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
       })
@@ -99,7 +88,7 @@ export const getTasks = async (req: Request, res: Response) => {
           notes: tasks.notes,
           startDate: tasks.startDate,
           endDate: tasks.endDate,
-          organizationId: tasks.organizationId,
+          teamId: tasks.teamId,
           createdAt: tasks.createdAt,
           updatedAt: tasks.updatedAt,
         })
@@ -736,6 +725,18 @@ export const getAssignedTasks = async (req: Request, res: Response) => {
       });
     }
 
+    const teamId = req.query.teamId as string | undefined;
+
+    // Build where conditions
+    const whereConditions = [eq(taskAssignees.userId, req.user.id)];
+
+    // Filter by teamId: null for personal tasks, specific teamId for team tasks
+    if (teamId && teamId !== 'undefined' && teamId !== 'null') {
+      whereConditions.push(eq(tasks.teamId, teamId));
+    } else {
+      whereConditions.push(isNull(tasks.teamId));
+    }
+
     const assignedTasks = await db
       .select({
         id: tasks.id,
@@ -748,12 +749,13 @@ export const getAssignedTasks = async (req: Request, res: Response) => {
         startDate: tasks.startDate,
         endDate: tasks.endDate,
         organizationId: tasks.organizationId,
+        teamId: tasks.teamId,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
       })
       .from(tasks)
       .innerJoin(taskAssignees, eq(tasks.id, taskAssignees.taskId))
-      .where(eq(taskAssignees.userId, req.user.id))
+      .where(and(...whereConditions))
       .orderBy(desc(tasks.updatedAt));
 
     // Get additional data for each task

@@ -18,11 +18,15 @@ export const getTaskStages = async (req: Request, res: Response) => {
       });
     }
 
-    // Get user stages and default stages (where organizationId is null)
+    const teamId = req.query.teamId as string | undefined;
+
+    // Filter by teamId: null for personal stages, specific teamId for team stages
+    const whereCondition = teamId ? eq(taskStages.teamId, teamId) : isNull(taskStages.teamId);
+
     const stages = await db
       .select()
       .from(taskStages)
-      .where(isNull(taskStages.organizationId)) // For now, only default stages
+      .where(whereCondition)
       .orderBy(asc(taskStages.order));
 
     res.json(stages);
@@ -52,23 +56,26 @@ export const createTaskStage = async (req: Request, res: Response) => {
     }
 
     const { name } = validation.data;
+    const teamId = req.query.teamId as string | undefined;
 
     // Get the current max order to append the new stage at the end
+    const whereCondition = teamId ? eq(taskStages.teamId, teamId) : isNull(taskStages.teamId);
+
     const maxOrderResult = await db
       .select({ maxOrder: taskStages.order })
       .from(taskStages)
-      .where(isNull(taskStages.organizationId))
+      .where(whereCondition)
       .orderBy(taskStages.order)
       .limit(1);
 
-    const maxOrder = maxOrderResult.length > 0 
-      ? Math.max(...maxOrderResult.map(r => r.maxOrder)) 
+    const maxOrder = maxOrderResult.length > 0
+      ? Math.max(...maxOrderResult.map(r => r.maxOrder))
       : -1;
 
     const newStage = await db.insert(taskStages).values({
       name,
       order: maxOrder + 1,
-      organizationId: null // For now, all stages are default
+      teamId: teamId || null
     }).returning();
 
     res.status(201).json(newStage[0]);

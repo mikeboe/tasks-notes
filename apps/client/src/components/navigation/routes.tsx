@@ -9,6 +9,7 @@ import TasksPage from "@/pages/tasks";
 import TaskDetailPage from "@/pages/task-detail";
 
 export const mainRoutes: RouteElement[] = [
+  // Personal context routes
   {
     path: "/",
     element: <ProtectedRoute><Index /></ProtectedRoute>,
@@ -29,6 +30,30 @@ export const mainRoutes: RouteElement[] = [
     element: <ProtectedRoute><TaskDetailPage /></ProtectedRoute>,
     visible: true,
   },
+
+  // Team context routes
+  {
+    path: "/:teamId",
+    element: <ProtectedRoute><Index /></ProtectedRoute>,
+    visible: true,
+  },
+  {
+    path: "/:teamId/notes/:id",
+    element: <ProtectedRoute><NotePage /></ProtectedRoute>,
+    visible: true,
+  },
+  {
+    path: "/:teamId/tasks",
+    element: <ProtectedRoute><TasksPage /></ProtectedRoute>,
+    visible: true,
+  },
+  {
+    path: "/:teamId/tasks/:id",
+    element: <ProtectedRoute><TaskDetailPage /></ProtectedRoute>,
+    visible: true,
+  },
+
+  // Auth routes
   {
     path: "/signup",
     element: <RegisterPage />,

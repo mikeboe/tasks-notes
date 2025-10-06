@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sidebar"
 import { type Note } from "@/types/note"
 import { NotesApi } from "@/lib/notes-api"
+import { useTeamContext } from "@/hooks/use-team-context"
 
 interface NavNotesProps {
   notes: Note[]
@@ -83,6 +84,7 @@ function NoteItem({ note, onNotesUpdate, level = 0, onRegisterRef }: NoteItemPro
   const [isLoading, setIsLoading] = React.useState(false)
   const [isHovered, setIsHovered] = React.useState(false)
   const navigate = useNavigate()
+  const { teamId } = useTeamContext()
 
   const hasChildren = note.children && note.children.length > 0
 
@@ -97,27 +99,29 @@ function NoteItem({ note, onNotesUpdate, level = 0, onRegisterRef }: NoteItemPro
 
   const handleNoteClick = (e: React.MouseEvent) => {
     e.preventDefault()
-    navigate(`/notes/${note.id}`)
+    const path = teamId ? `/${teamId}/notes/${note.id}` : `/notes/${note.id}`
+    navigate(path)
   }
 
   const handleCreateChild = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    
+
     setIsLoading(true)
     try {
       const response = await NotesApi.createNote({
         title: "New Note",
         content: "",
         parentId: note.id
-      })
-      
+      }, teamId)
+
       if (response.success) {
-        const notesResponse = await NotesApi.getNotes()
+        const notesResponse = await NotesApi.getNotes(teamId)
         if (notesResponse.success && notesResponse.data) {
           onNotesUpdate(notesResponse.data)
           if (response.data) {
-            navigate(`/notes/${response.data.id}`)
+            const path = teamId ? `/${teamId}/notes/${response.data.id}` : `/notes/${response.data.id}`
+            navigate(path)
           }
         }
       }
@@ -133,7 +137,7 @@ function NoteItem({ note, onNotesUpdate, level = 0, onRegisterRef }: NoteItemPro
     try {
       const response = await NotesApi.moveNote(note.id, direction)
       if (response.success) {
-        const notesResponse = await NotesApi.getNotes()
+        const notesResponse = await NotesApi.getNotes(teamId)
         if (notesResponse.success && notesResponse.data) {
           onNotesUpdate(notesResponse.data)
         }
@@ -149,12 +153,12 @@ function NoteItem({ note, onNotesUpdate, level = 0, onRegisterRef }: NoteItemPro
     if (!confirm(`Are you sure you want to delete "${note.title}"?`)) {
       return
     }
-    
+
     setIsLoading(true)
     try {
       const response = await NotesApi.deleteNote(note.id)
       if (response.success) {
-        const notesResponse = await NotesApi.getNotes()
+        const notesResponse = await NotesApi.getNotes(teamId)
         if (notesResponse.success && notesResponse.data) {
           onNotesUpdate(notesResponse.data)
         }
@@ -257,6 +261,7 @@ export function NavNotes({ notes, onNotesUpdate }: NavNotesProps) {
   const [allExpanded, setAllExpanded] = React.useState(false)
   const noteRefs = React.useRef<Map<string, NoteItemHandle>>(new Map())
   const navigate = useNavigate()
+  const { teamId } = useTeamContext()
 
   const handleRegisterRef = React.useCallback((id: string, handle: NoteItemHandle) => {
     noteRefs.current.set(id, handle)
@@ -279,14 +284,15 @@ export function NavNotes({ notes, onNotesUpdate }: NavNotesProps) {
       const response = await NotesApi.createNote({
         title: "New Note",
         content: ""
-      })
-      
+      }, teamId)
+
       if (response.success) {
-        const notesResponse = await NotesApi.getNotes()
+        const notesResponse = await NotesApi.getNotes(teamId)
         if (notesResponse.success && notesResponse.data) {
           onNotesUpdate(notesResponse.data)
           if (response.data) {
-            navigate(`/notes/${response.data.id}`)
+            const path = teamId ? `/${teamId}/notes/${response.data.id}` : `/notes/${response.data.id}`
+            navigate(path)
           }
         }
       }

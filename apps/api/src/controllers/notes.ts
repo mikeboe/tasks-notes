@@ -13,17 +13,33 @@ export const getNotes = async (req: Request, res: Response) => {
       });
     }
 
+    const teamId = req.query.teamId as string | undefined;
+
+    // Build where conditions
+    const whereConditions = [
+      eq(notes.userId, req.user.id),
+      eq(notes.archived, false)
+    ];
+
+    // Filter by teamId: null for personal notes, specific teamId for team notes
+    if (teamId) {
+      whereConditions.push(eq(notes.teamId, teamId));
+    } else {
+      whereConditions.push(isNull(notes.teamId));
+    }
+
     const userNotes = await db.select({
       id: notes.id,
       title: notes.title,
       userId: notes.userId,
+      teamId: notes.teamId,
       parentId: notes.parentId,
       order: notes.order,
       archived: notes.archived,
       searchableContent: notes.searchableContent,
       createdAt: notes.createdAt,
       updatedAt: notes.updatedAt,
-    }).from(notes).where(and(eq(notes.userId, req.user.id), eq(notes.archived, false))).orderBy(asc(notes.order));
+    }).from(notes).where(and(...whereConditions)).orderBy(asc(notes.order));
 
     res.json(userNotes);
   } catch (error) {
@@ -76,21 +92,34 @@ export const createNote = async (req: Request, res: Response) => {
     }
 
     const { title, content, parentId, order } = validation.data;
+    const teamId = req.query.teamId as string | undefined;
+
+    // Build where conditions for finding max order
+    const whereConditions = [eq(notes.userId, req.user.id)];
+
+    if (teamId) {
+      whereConditions.push(eq(notes.teamId, teamId));
+    } else {
+      whereConditions.push(isNull(notes.teamId));
+    }
+
+    if (parentId) {
+      whereConditions.push(eq(notes.parentId, parentId));
+    } else {
+      whereConditions.push(isNull(notes.parentId));
+    }
 
     let noteOrder = order;
     if (noteOrder === undefined) {
       const maxOrderResult = await db.select({ maxOrder: max(notes.order) })
         .from(notes)
-        .where(and(
-          eq(notes.userId, req.user.id),
-          parentId ? eq(notes.parentId, parentId) : eq(notes.parentId, null)
-        ));
-      
+        .where(and(...whereConditions));
+
       noteOrder = (maxOrderResult[0]?.maxOrder || 0) + 1;
     }
 
     const searchableContent = content ? extractTextFromBlockNote(content) : '';
-    
+
     const newNote = await db.insert(notes).values({
       title,
       content,
@@ -98,6 +127,7 @@ export const createNote = async (req: Request, res: Response) => {
       parentId,
       order: noteOrder,
       userId: req.user.id,
+      teamId: teamId || null,
     }).returning();
 
     res.status(201).json(newNote[0]);
@@ -530,6 +560,20 @@ export const getRecentNotes = async (req: Request, res: Response) => {
     }
 
     const limit = parseInt(req.query.limit as string) || 5;
+    const teamId = req.query.teamId as string | undefined;
+
+    // Build where conditions
+    const whereConditions = [
+      eq(notes.userId, req.user.id),
+      eq(notes.archived, false)
+    ];
+
+    // Filter by teamId: null for personal notes, specific teamId for team notes
+    if (teamId && teamId !== 'undefined' && teamId !== 'null') {
+      whereConditions.push(eq(notes.teamId, teamId));
+    } else {
+      whereConditions.push(isNull(notes.teamId));
+    }
 
     const recentNotes = await db.select({
       id: notes.id,
@@ -537,6 +581,7 @@ export const getRecentNotes = async (req: Request, res: Response) => {
       content: notes.content,
       searchableContent: notes.searchableContent,
       userId: notes.userId,
+      teamId: notes.teamId,
       parentId: notes.parentId,
       order: notes.order,
       archived: notes.archived,
@@ -544,7 +589,7 @@ export const getRecentNotes = async (req: Request, res: Response) => {
       updatedAt: notes.updatedAt,
     })
     .from(notes)
-    .where(and(eq(notes.userId, req.user.id), eq(notes.archived, false)))
+    .where(and(...whereConditions))
     .orderBy(desc(notes.updatedAt))
     .limit(limit);
 

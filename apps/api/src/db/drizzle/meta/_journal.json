@@ -64,6 +64,20 @@
       "when": 1758876943899,
       "tag": "0008_certain_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1759666198359,
+      "tag": "0009_parallel_doomsday",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1759733605168,
+      "tag": "0010_lyrical_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }

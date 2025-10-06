@@ -20,6 +20,7 @@ import {
 import { type Note } from "@/types/note"
 import { NotesApi } from "@/lib/notes-api"
 import { useNotes } from "@/context/NotesContext"
+import { useTeamContext } from "@/hooks/use-team-context"
 
 interface NavNotesDndProps {}
 
@@ -58,6 +59,7 @@ export function NavNotesDnd({}: NavNotesDndProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const navigate = useNavigate()
+  const { teamId } = useTeamContext()
 
   React.useEffect(() => {
     setTreeData(buildTreeData(notes))
@@ -94,12 +96,13 @@ export function NavNotesDnd({}: NavNotesDndProps) {
       const response = await NotesApi.createNote({
         title: "New Note",
         content: ""
-      })
-      
+      }, teamId)
+
       if (response.success) {
         await fetchNotes()
         if (response.data) {
-          navigate(`/notes/${response.data.id}`)
+          const path = teamId ? `/${teamId}/notes/${response.data.id}` : `/notes/${response.data.id}`
+          navigate(path)
         }
       }
     } catch (error) {
@@ -116,12 +119,13 @@ export function NavNotesDnd({}: NavNotesDndProps) {
         title: "New Note",
         content: "",
         parentId: parentId
-      })
-      
+      }, teamId)
+
       if (response.success) {
         await fetchNotes()
         if (response.data) {
-          navigate(`/notes/${response.data.id}`)
+          const path = teamId ? `/${teamId}/notes/${response.data.id}` : `/notes/${response.data.id}`
+          navigate(path)
         }
       }
     } catch (error) {
@@ -132,7 +136,8 @@ export function NavNotesDnd({}: NavNotesDndProps) {
   }
 
   const handleNodeClick = (node: NodeModel<TreeNoteData>) => {
-    navigate(`/notes/${node.id}`)
+    const path = teamId ? `/${teamId}/notes/${node.id}` : `/notes/${node.id}`
+    navigate(path)
   }
 
   const renderNode = useCallback((node: NodeModel<TreeNoteData>, { depth, isOpen, onToggle, hasChild, isDropTarget, isDragging }: any) => {

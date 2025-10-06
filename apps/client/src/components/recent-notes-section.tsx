@@ -5,18 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { NotesApi } from "@/lib/notes-api"
 import { type Note } from "@/types/note"
+import { useTeamContext } from "@/hooks/use-team-context"
 
 export function RecentNotesSection() {
   const [notes, setNotes] = React.useState<Note[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const navigate = useNavigate()
+  const { teamId } = useTeamContext()
 
   React.useEffect(() => {
     const loadRecentNotes = async () => {
       try {
         setIsLoading(true)
-        const response = await NotesApi.getRecentNotes(5)
+        const response = await NotesApi.getRecentNotes(5, teamId)
         if (response.success && response.data) {
           setNotes(response.data)
         } else {
@@ -30,7 +32,7 @@ export function RecentNotesSection() {
     }
 
     loadRecentNotes()
-  }, [])
+  }, [teamId])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -54,11 +56,13 @@ export function RecentNotesSection() {
   }
 
   const handleNoteClick = (noteId: string) => {
-    navigate(`/notes/${noteId}`)
+    const path = teamId ? `/${teamId}/notes/${noteId}` : `/notes/${noteId}`
+    navigate(path)
   }
 
   const handleViewAllNotes = () => {
-    navigate('/notes')
+    const path = teamId ? `/${teamId}` : '/'
+    navigate(path)
   }
 
   if (isLoading) {
@@ -119,11 +123,11 @@ export function RecentNotesSection() {
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">No notes created yet</p>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="mt-2"
-              onClick={() => navigate('/notes')}
+              onClick={() => navigate(teamId ? `/${teamId}` : '/')}
             >
               Create your first note
             </Button>

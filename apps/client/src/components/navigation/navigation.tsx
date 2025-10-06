@@ -3,7 +3,7 @@ import React from "react";
 // import { useAuth } from "@/context/NewAuthContext";
 
 import { Outlet, useLocation,
-  // useNavigate 
+  // useNavigate
   } from "react-router-dom";
 
 // import { usePermissions } from "@/components/hooks/use-permissions";
@@ -11,6 +11,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 // import { NavActions } from "@/components/nav-actions"
 import { NotesProvider, useNotes } from "@/context/NotesContext"
 import { type Note } from "@/types/index"
+import { useTeams } from "@/context/TeamContext"
 
 import { Separator } from "@/components/ui/separator"
 import {
@@ -26,6 +27,7 @@ const NavigationContent = () => {
   // const navigate = useNavigate();
   const location = useLocation();
   const { notes } = useNotes();
+  const { teams } = useTeams();
 
   // Helper function to find a note by ID in the tree
   const findNoteById = (noteId: string, notesList: (Note & { children: any[] })[]): (Note & { children: any[] }) | null => {
@@ -41,17 +43,30 @@ const NavigationContent = () => {
     return null;
   };
 
+  // Helper function to find a team by ID
+  const findTeamById = (teamId: string) => {
+    return teams.find(team => team.id === teamId);
+  };
+
   // Create breadcrumbs from current path
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const breadcrumbs = pathSegments.map((segment, index) => {
     const path = '/' + pathSegments.slice(0, index + 1).join('/');
-    
+
     // Check if the segment looks like a note ID and try to find the corresponding note
     const note = findNoteById(segment, notes);
-    const label = note 
-      ? note.title 
-      : segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
-    
+    if (note) {
+      return { path, label: note.title };
+    }
+
+    // Check if the segment is a team ID and try to find the corresponding team
+    const team = findTeamById(segment);
+    if (team) {
+      return { path, label: team.name };
+    }
+
+    // Default: capitalize and format the segment
+    const label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
     return { path, label };
   });
 

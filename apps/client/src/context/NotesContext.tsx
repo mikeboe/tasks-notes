@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { NotesApi } from '@/lib/notes-api';
 import { type Note } from '@/types/index';
 import { buildTree } from '@/lib/utils';
+import { useTeamContext } from '@/hooks/use-team-context';
 
 interface NoteNode extends Note {
   children: NoteNode[];
@@ -19,17 +20,19 @@ const NotesContext = createContext<NotesContextType | undefined>(undefined);
 
 export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notes, setNotes] = useState<NoteNode[]>([]);
+  const { teamId } = useTeamContext();
 
   const fetchNotes = useCallback(async () => {
-    const response = await NotesApi.getNotes();
+    const response = await NotesApi.getNotes(teamId);
     if (response.success && response.data) {
       setNotes(buildTree(response.data) as NoteNode[]);
     }
-  }, []);
+  }, [teamId]);
 
+  // Reload notes when teamId changes
   useEffect(() => {
     fetchNotes();
-  }, [fetchNotes]);
+  }, [fetchNotes, teamId]);
 
   const updateNoteTitleInTree = useCallback((noteId: string, newTitle: string) => {
     setNotes(prevNotes => {

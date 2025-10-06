@@ -5,18 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { TasksApi } from "@/lib/tasks-api"
 import { type Task } from "@/types/task"
+import { useTeamContext } from "@/hooks/use-team-context"
 
 export function AssignedTasksSection() {
   const [tasks, setTasks] = React.useState<Task[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const navigate = useNavigate()
+  const { teamId } = useTeamContext()
 
   React.useEffect(() => {
     const loadAssignedTasks = async () => {
       try {
         setIsLoading(true)
-        const response = await TasksApi.getAssignedTasks()
+        const response = await TasksApi.getAssignedTasks(teamId)
         if (response.success && response.data) {
           setTasks(response.data.slice(0, 5))
         } else {
@@ -30,7 +32,7 @@ export function AssignedTasksSection() {
     }
 
     loadAssignedTasks()
-  }, [])
+  }, [teamId])
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -69,11 +71,13 @@ export function AssignedTasksSection() {
   }
 
   const handleTaskClick = (taskId: string) => {
-    navigate(`/tasks/${taskId}`)
+    const path = teamId ? `/${teamId}/tasks/${taskId}` : `/tasks/${taskId}`
+    navigate(path)
   }
 
   const handleViewAllTasks = () => {
-    navigate('/tasks')
+    const path = teamId ? `/${teamId}/tasks` : '/tasks'
+    navigate(path)
   }
 
   if (isLoading) {

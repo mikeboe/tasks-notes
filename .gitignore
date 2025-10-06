@@ -31,3 +31,4 @@ apps/**/.env
 .env
 
 k8s/chart/values-dev.yaml
+

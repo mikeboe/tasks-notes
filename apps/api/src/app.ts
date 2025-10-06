@@ -9,6 +9,7 @@ import tasksRoutes from "./routes/tasks";
 import taskStagesRoutes from "./routes/task-stages";
 import tagsRoutes from "./routes/tags";
 import searchRoutes from "./routes/search";
+import teamsRoutes from "./routes/teams";
 
 export const createApp = () => {
     const app = express();
@@ -37,6 +38,7 @@ export const createApp = () => {
 
     // Routes
     app.use("/auth", authRoutes);
+    app.use("/teams", teamsRoutes);
     app.use("/notes", notesRoutes);
     app.use("/tasks", tasksRoutes);
     app.use("/task-stages", taskStagesRoutes);
