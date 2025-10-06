@@ -420,6 +420,49 @@ export const updateTeamMember = async (req: Request, res: Response) => {
 };
 
 /**
+ * Get teams for a specific user (admin only)
+ * GET /api/teams/user/:userId
+ */
+export const getUserTeams = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    // Get all teams where the specified user is a member
+    const userTeams = await db
+      .select({
+        id: teams.id,
+        name: teams.name,
+        createdById: teams.createdById,
+        createdAt: teams.createdAt,
+        updatedAt: teams.updatedAt,
+        role: teamMembers.role,
+        joinedAt: teamMembers.joinedAt,
+      })
+      .from(teamMembers)
+      .innerJoin(teams, eq(teamMembers.teamId, teams.id))
+      .where(eq(teamMembers.userId, userId));
+
+    res.json({
+      success: true,
+      data: userTeams
+    });
+  } catch (error) {
+    console.error('Get user teams error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+/**
  * Remove a member from a team
  * DELETE /api/teams/:teamId/members/:userId
  */
@@ -438,8 +481,25 @@ export const removeTeamMember = async (req: Request, res: Response) => {
       });
     }
 
-    // Prevent removing the last owner
-    if (req.teamMembership?.role === 'owner') {
+    // Get the user being removed to check their role
+    const userBeingRemoved = await db
+      .select({ role: teamMembers.role })
+      .from(teamMembers)
+      .where(and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.userId, userId)
+      ))
+      .limit(1);
+
+    if (!userBeingRemoved.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Team member not found'
+      });
+    }
+
+    // Prevent removing the last owner (only if the user being removed is an owner)
+    if (userBeingRemoved[0].role === 'owner') {
       const ownerCount = await db
         .select({ count: sql<number>`COUNT(*)::int` })
         .from(teamMembers)

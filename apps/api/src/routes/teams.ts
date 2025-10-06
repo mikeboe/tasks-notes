@@ -11,6 +11,7 @@ import {
   getTeamMembers,
   updateTeamMember,
   removeTeamMember,
+  getUserTeams,
 } from '../controllers/teams';
 
 const router = Router();
@@ -21,6 +22,7 @@ router.use(authMiddleware);
 // Team management routes
 router.post('/', createTeam);
 router.get('/', getTeams);
+router.get('/user/:userId', getUserTeams);
 router.get('/:teamId', requireTeamMember, getTeamById);
 router.put('/:teamId', requireTeamMember, requireTeamAdmin, updateTeam);
 router.delete('/:teamId', requireTeamMember, requireTeamOwner, deleteTeam);

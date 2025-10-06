@@ -205,4 +205,18 @@ export const TeamsApi = {
       throw new Error(json.message || 'Failed to remove team member');
     }
   },
+
+  /**
+   * Get teams for a specific user
+   */
+  getUserTeams: async (userId: string): Promise<Team[]> => {
+    const response = await authenticatedRequest(`${API_URL}/teams/user/${userId}`);
+    const json: ApiResponse<Team[]> = await response.json();
+
+    if (!json.success || !json.data) {
+      throw new Error(json.message || 'Failed to fetch user teams');
+    }
+
+    return json.data;
+  },
 };

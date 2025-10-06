@@ -1,3 +1,4 @@
+import { useState } from "react"
 import {
   BadgeCheck,
   Bell,
@@ -5,6 +6,7 @@ import {
   CreditCard,
   LogOut,
   Sparkles,
+  Settings,
 } from "lucide-react"
 
 import {
@@ -28,6 +30,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import type { User } from "@/types"
+import { SettingsDialog } from "@/components/settings/settings-dialog"
+import { useNavigate } from "react-router-dom"
+import { AuthApi } from "@/lib/auth-api"
+import { toast } from "sonner"
 
 export function NavUser({
   user,
@@ -35,6 +41,17 @@ export function NavUser({
   user: User | null
 }) {
   const { isMobile } = useSidebar()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    try {
+      await AuthApi.logout()
+      navigate("/login")
+    } catch (error) {
+      toast.error("Failed to logout")
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -83,6 +100,10 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                <Settings />
+                Settings
+              </DropdownMenuItem>
               <DropdownMenuItem>
                 <BadgeCheck />
                 Account
@@ -97,13 +118,18 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        currentUser={user}
+      />
     </SidebarMenu>
   )
 }
