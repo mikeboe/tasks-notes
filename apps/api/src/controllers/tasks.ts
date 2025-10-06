@@ -727,16 +727,6 @@ export const getAssignedTasks = async (req: Request, res: Response) => {
 
     const teamId = req.query.teamId as string | undefined;
 
-    // Build where conditions
-    const whereConditions = [eq(taskAssignees.userId, req.user.id)];
-
-    // Filter by teamId: null for personal tasks, specific teamId for team tasks
-    if (teamId && teamId !== 'undefined' && teamId !== 'null') {
-      whereConditions.push(eq(tasks.teamId, teamId));
-    } else {
-      whereConditions.push(isNull(tasks.teamId));
-    }
-
     const assignedTasks = await db
       .select({
         id: tasks.id,
@@ -748,14 +738,17 @@ export const getAssignedTasks = async (req: Request, res: Response) => {
         notes: tasks.notes,
         startDate: tasks.startDate,
         endDate: tasks.endDate,
-        organizationId: tasks.organizationId,
         teamId: tasks.teamId,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
       })
       .from(tasks)
       .innerJoin(taskAssignees, eq(tasks.id, taskAssignees.taskId))
-      .where(and(...whereConditions))
+      .where(
+        teamId && teamId !== 'undefined' && teamId !== 'null'
+          ? and(eq(taskAssignees.userId, req.user.id), eq(tasks.teamId, teamId))
+          : and(eq(taskAssignees.userId, req.user.id), isNull(tasks.teamId))
+      )
       .orderBy(desc(tasks.updatedAt));
 
     // Get additional data for each task
