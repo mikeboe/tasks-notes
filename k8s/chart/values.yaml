@@ -8,6 +8,10 @@ client:
     tag: 1.2.1
   env:
     VITE_API_BASE_URL: ${API_HOST}
+    VITE_ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID}
+    VITE_ENTRA_AUTHORITY: https://login.microsoftonline.com/${ENTRA_TENANT_ID}
+    VITE_ENTRA_REDIRECT_URI: ${APP_HOST}
+    VITE_ENTRA_POST_LOGOUT_REDIRECT_URI: ${APP_HOST}
 api:
   host: ${API_HOST}
   image:

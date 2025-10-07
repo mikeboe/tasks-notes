@@ -21,11 +21,9 @@ import { UserPlus, Mail } from "lucide-react";
 import { toast } from "sonner";
 import type { User } from "@/types";
 
-interface UserManagementProps {
-  currentUser: User | null;
-}
+interface UserManagementProps {}
 
-export function UserManagement({ _currentUser }: UserManagementProps) {
+export function UserManagement({}: UserManagementProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -94,7 +94,7 @@ export function SettingsDialog({ open, onClose, currentUser }: SettingsDialogPro
             </header>
             <div className="flex flex-1 flex-col overflow-y-auto p-4 pt-0">
               {activeSection === "users" && isAdmin && (
-                <UserManagement currentUser={currentUser} />
+                <UserManagement />
               )}
               {activeSection === "api-keys" && <ApiKeysSettings />}
             </div>
