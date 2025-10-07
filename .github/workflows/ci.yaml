@@ -116,33 +116,3 @@ jobs:
                   tags: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/tasks-notes-${{ matrix.app }}:${{ needs.create_version.outputs.version }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
-
-    # Job 4: Deploy to Kubernetes
-    deploy:
-        name: Deploy to Kubernetes
-        runs-on: ubuntu-latest
-        needs: [create_version, build_and_push_docker]
-        environment: production
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-            - name: Set up K8s context
-              uses: azure/k8s-set-context@v3
-              with:
-                  method: kubeconfig
-                  kubeconfig: ${{ secrets.KUBE_CONFIG }}
-            - name: Set up Helm
-              uses: azure/setup-helm@v4
-            - name: Deploy with Helm
-              run: |
-                  helm upgrade --install tasks-notes ./k8s/chart \
-                    --namespace tasks-notes \
-                    --create-namespace \
-                    --wait \
-                    --set client.image.tag=${{ needs.create_version.outputs.version }} \
-                    --set api.image.tag=${{ needs.create_version.outputs.version }} \
-                    --set api.env.DATABASE_URL=${{ secrets.DATABASE_URL }} \
-                    --set api.env.JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }} \
-                    --set api.env.JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }} \
-                    --set api.env.API_HOST=${{ secrets.API_HOST }} \
-                    --set client.env.APP_HOST=${{ secrets.CLIENT_HOST }}
