@@ -1,5 +1,6 @@
+import { config } from "@/config";
 import { authenticatedRequest } from "./auth-api";
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = config.apiUrl || 'http://localhost:3000';
 
 export interface Team {
   id: string;
