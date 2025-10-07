@@ -9,7 +9,7 @@ interface TeamContextType {
   isLoading: boolean;
   error: string | null;
   switchTeam: (teamId: string | null) => void;
-  createTeam: (name: string) => Promise<Team>;
+  createTeam: (name: string, color?: string, icon?: string) => Promise<Team>;
   refreshTeams: () => Promise<void>;
   setCurrentTeamById: (teamId: string | null) => void;
 }
@@ -102,9 +102,9 @@ export const TeamProvider: React.FC<TeamProviderProps> = ({ children }) => {
   }, [navigate]);
 
   // Create a new team
-  const createTeam = useCallback(async (name: string): Promise<Team> => {
+  const createTeam = useCallback(async (name: string, color?: string, icon?: string): Promise<Team> => {
     try {
-      const newTeam = await TeamsApi.createTeam({ name });
+      const newTeam = await TeamsApi.createTeam({ name, color, icon });
       await refreshTeams();
       return newTeam;
     } catch (err) {

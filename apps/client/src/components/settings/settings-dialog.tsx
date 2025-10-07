@@ -2,6 +2,7 @@ import * as React from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { UserManagement } from "./user-management";
 import { ApiKeysSettings } from "./api-keys-settings";
+import { TeamManagement } from "./team-management";
 import { type User } from "@/types";
 import {
   Sidebar,
@@ -21,7 +22,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Users, Key } from "lucide-react";
+import { Users, Key, Layers } from "lucide-react";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -29,16 +30,17 @@ interface SettingsDialogProps {
   currentUser: User | null;
 }
 
-type SettingsSection = "users" | "api-keys";
+type SettingsSection = "users" | "teams" | "api-keys";
 
 export function SettingsDialog({ open, onClose, currentUser }: SettingsDialogProps) {
   const isAdmin = currentUser?.role === 'admin';
   const [activeSection, setActiveSection] = React.useState<SettingsSection>(
-    isAdmin ? "users" : "api-keys"
+    isAdmin ? "users" : "teams"
   );
 
   const navItems = [
     ...(isAdmin ? [{ id: "users" as const, name: "User Management", icon: Users }] : []),
+    { id: "teams" as const, name: "Teams", icon: Layers },
     { id: "api-keys" as const, name: "API Keys", icon: Key },
   ];
 
@@ -96,6 +98,7 @@ export function SettingsDialog({ open, onClose, currentUser }: SettingsDialogPro
               {activeSection === "users" && isAdmin && (
                 <UserManagement />
               )}
+              {activeSection === "teams" && <TeamManagement />}
               {activeSection === "api-keys" && <ApiKeysSettings />}
             </div>
           </main>

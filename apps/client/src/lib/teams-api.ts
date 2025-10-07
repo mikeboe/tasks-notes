@@ -11,6 +11,8 @@ export interface Team {
   role?: 'owner' | 'admin' | 'member';
   joinedAt?: string;
   memberCount?: number;
+  color?: string;
+  icon?: string;
 }
 
 export interface TeamMember {
@@ -29,10 +31,14 @@ export interface TeamDetails extends Team {
 
 export interface CreateTeamRequest {
   name: string;
+  color?: string;
+  icon?: string;
 }
 
 export interface UpdateTeamRequest {
   name: string;
+  color?: string;
+  icon?: string;
 }
 
 export interface AddTeamMemberRequest {

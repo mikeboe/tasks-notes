@@ -34,13 +34,15 @@ export const createTeam = async (req: Request, res: Response) => {
       });
     }
 
-    const { name } = validation.data;
+    const { name, color, icon } = validation.data;
 
     // Create team and add creator as owner in a transaction
     const result = await db.transaction(async (tx) => {
       // Create the team
       const newTeam = await tx.insert(teams).values({
         name,
+        color,
+        icon,
         createdById: req.user!.id,
       }).returning();
 
@@ -85,6 +87,8 @@ export const getTeams = async (req: Request, res: Response) => {
       .select({
         id: teams.id,
         name: teams.name,
+        color: teams.color,
+        icon: teams.icon,
         createdById: teams.createdById,
         createdAt: teams.createdAt,
         updatedAt: teams.updatedAt,
@@ -189,15 +193,21 @@ export const updateTeam = async (req: Request, res: Response) => {
       });
     }
 
-    const { name } = validation.data;
+    const { name, color, icon } = validation.data;
+
+    // Build update object with only provided fields
+    const updateData: Partial<typeof teams.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+
+    if (name !== undefined) updateData.name = name;
+    if (color !== undefined) updateData.color = color;
+    if (icon !== undefined) updateData.icon = icon;
 
     // Update team
     const updatedTeam = await db
       .update(teams)
-      .set({
-        name,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(teams.id, teamId))
       .returning();
 
@@ -439,6 +449,8 @@ export const getUserTeams = async (req: Request, res: Response) => {
       .select({
         id: teams.id,
         name: teams.name,
+        color: teams.color,
+        icon: teams.icon,
         createdById: teams.createdById,
         createdAt: teams.createdAt,
         updatedAt: teams.updatedAt,
