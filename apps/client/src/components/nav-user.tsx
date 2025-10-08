@@ -1,11 +1,7 @@
 import { useState } from "react"
 import {
-  BadgeCheck,
-  Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
-  Sparkles,
   Settings,
 } from "lucide-react"
 
