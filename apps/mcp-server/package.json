@@ -1,0 +1,36 @@
+{
+  "name": "task-notes-mcp-stdio",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for Task Notes - provides read-only access to notes and tasks",
+  "type": "module",
+  "bin": {
+    "task-notes-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "task-notes",
+    "ai",
+    "llm"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "axios": "^1.12.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "typescript": "^5.9.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

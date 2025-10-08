@@ -4,6 +4,7 @@ import { UserManagement } from "./user-management";
 import { ApiKeysSettings } from "./api-keys-settings";
 import { TeamManagement } from "./team-management";
 import { TaskStagesSettings } from "./task-stages-settings";
+import { AppearanceSettings } from "./appearance-settings";
 import { type User } from "@/types";
 import {
   Sidebar,
@@ -23,7 +24,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Users, Key, Layers, Columns3 } from "lucide-react";
+import { Users, Key, Layers, Columns3, Palette } from "lucide-react";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -31,15 +32,14 @@ interface SettingsDialogProps {
   currentUser: User | null;
 }
 
-type SettingsSection = "users" | "teams" | "task-stages" | "api-keys";
+type SettingsSection = "users" | "teams" | "task-stages" | "api-keys" | "appearance";
 
 export function SettingsDialog({ open, onClose, currentUser }: SettingsDialogProps) {
   const isAdmin = currentUser?.role === 'admin';
-  const [activeSection, setActiveSection] = React.useState<SettingsSection>(
-    isAdmin ? "users" : "teams"
-  );
+  const [activeSection, setActiveSection] = React.useState<SettingsSection>("appearance");
 
   const navItems = [
+    { id: "appearance" as const, name: "Appearance", icon: Palette },
     ...(isAdmin ? [{ id: "users" as const, name: "User Management", icon: Users }] : []),
     { id: "teams" as const, name: "Teams", icon: Layers },
     { id: "task-stages" as const, name: "Task Stages", icon: Columns3 },
@@ -97,6 +97,7 @@ export function SettingsDialog({ open, onClose, currentUser }: SettingsDialogPro
               </div>
             </header>
             <div className="flex flex-1 flex-col overflow-y-auto p-4 pt-0">
+              {activeSection === "appearance" && <AppearanceSettings />}
               {activeSection === "users" && isAdmin && (
                 <UserManagement />
               )}

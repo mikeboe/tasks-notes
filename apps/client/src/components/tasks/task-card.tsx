@@ -88,7 +88,7 @@ export function TaskCard({ task, isOverlay, onTaskClick }: TaskCardProps) {
         variants({
           dragging: isOverlay ? "overlay" : isDragging ? "over" : undefined,
         }),
-        "bg-gray-100 text-card-foreground flex flex-col gap-6 rounded-xl py-6 focus-visible:ring-ring focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden touch-none select-none cursor-grab border-0 hover:shadow-md transition-shadow",
+        "bg-gray-50 dark:bg-gray-800 text-card-foreground flex flex-col gap-6 rounded-xl py-6 focus-visible:ring-ring focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden touch-none select-none cursor-grab border-0 hover:shadow-md transition-shadow",
         isDragging && "cursor-grabbing",
         taskData?.isCompleted && "opacity-75"
       )}

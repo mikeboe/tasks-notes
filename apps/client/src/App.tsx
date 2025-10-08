@@ -10,10 +10,11 @@ import { mainRoutes } from "./components/navigation/routes";
 // import { useUserStore } from "./context/UserContext";
 // import keycloak from "./keycloak";
 import Navigation from "./components/navigation/navigation";
+import { ThemeProvider } from "./components/theme-provider";
 
 function App() {
   return (
-    <>
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <Toaster
         position="bottom-center"
         reverseOrder={false}
@@ -58,7 +59,7 @@ function App() {
         </Route>
 
       </Routes >
-    </>
+    </ThemeProvider>
   );
 }
 

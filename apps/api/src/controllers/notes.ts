@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
 import { notes, favorites, createNoteSchema, updateNoteSchema, reorderNoteSchema } from '../schema/notes-schema';
+import { teamMembers } from '../schema/teams-schema';
 import { eq, and, asc, desc, max, min, lt, gt, gte, lte, isNull } from 'drizzle-orm';
 import { extractTextFromBlockNote } from '../utils/text-extractor';
 
@@ -17,15 +18,32 @@ export const getNotes = async (req: Request, res: Response) => {
 
     // Build where conditions
     const whereConditions = [
-      eq(notes.userId, req.user.id),
       eq(notes.archived, false)
     ];
 
     // Filter by teamId: null for personal notes, specific teamId for team notes
     if (teamId) {
+      // Verify user is a member of the team
+      const membership = await db.select()
+        .from(teamMembers)
+        .where(and(
+          eq(teamMembers.teamId, teamId),
+          eq(teamMembers.userId, req.user.id)
+        ))
+        .limit(1);
+
+      if (!membership.length) {
+        return res.status(403).json({
+          message: 'You are not a member of this team'
+        });
+      }
+
+      // Return all notes for this team (created by any team member)
       whereConditions.push(eq(notes.teamId, teamId));
     } else {
+      // Return personal notes (only created by the user)
       whereConditions.push(isNull(notes.teamId));
+      whereConditions.push(eq(notes.userId, req.user.id));
     }
 
     const userNotes = await db.select({
@@ -564,15 +582,32 @@ export const getRecentNotes = async (req: Request, res: Response) => {
 
     // Build where conditions
     const whereConditions = [
-      eq(notes.userId, req.user.id),
       eq(notes.archived, false)
     ];
 
     // Filter by teamId: null for personal notes, specific teamId for team notes
     if (teamId && teamId !== 'undefined' && teamId !== 'null') {
+      // Verify user is a member of the team
+      const membership = await db.select()
+        .from(teamMembers)
+        .where(and(
+          eq(teamMembers.teamId, teamId),
+          eq(teamMembers.userId, req.user.id)
+        ))
+        .limit(1);
+
+      if (!membership.length) {
+        return res.status(403).json({
+          message: 'You are not a member of this team'
+        });
+      }
+
+      // Return all notes for this team (created by any team member)
       whereConditions.push(eq(notes.teamId, teamId));
     } else {
+      // Return personal notes (only created by the user)
       whereConditions.push(isNull(notes.teamId));
+      whereConditions.push(eq(notes.userId, req.user.id));
     }
 
     const recentNotes = await db.select({
@@ -597,7 +632,7 @@ export const getRecentNotes = async (req: Request, res: Response) => {
     const notesWithFavorites = await Promise.all(recentNotes.map(async (note) => {
       const favorite = await db.select().from(favorites)
         .where(and(eq(favorites.noteId, note.id), eq(favorites.userId, req.user!.id)));
-      
+
       return {
         ...note,
         isFavorite: favorite.length > 0

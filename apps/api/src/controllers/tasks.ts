@@ -16,6 +16,7 @@ import {
 } from '../schema/tasks-schema';
 import { users } from '../schema/auth-schema';
 import { notes } from '../schema/notes-schema';
+import { teamMembers } from '../schema/teams-schema';
 import { eq, and, inArray, desc, asc, isNull } from 'drizzle-orm';
 
 // Get all tasks with optional filters
@@ -39,13 +40,31 @@ export const getTasks = async (req: Request, res: Response) => {
     const teamId = req.query.teamId as string | undefined;
 
     // Apply filters
-    const conditions = [eq(tasks.createdById, req.user.id)];
+    const conditions = [];
 
     // Filter by teamId: null for personal tasks, specific teamId for team tasks
     if (teamId) {
+      // Verify user is a member of the team
+      const membership = await db.select()
+        .from(teamMembers)
+        .where(and(
+          eq(teamMembers.teamId, teamId),
+          eq(teamMembers.userId, req.user.id)
+        ))
+        .limit(1);
+
+      if (!membership.length) {
+        return res.status(403).json({
+          message: 'You are not a member of this team'
+        });
+      }
+
+      // Return all tasks for this team (created by any team member)
       conditions.push(eq(tasks.teamId, teamId));
     } else {
+      // Return personal tasks (only created by the user)
       conditions.push(isNull(tasks.teamId));
+      conditions.push(eq(tasks.createdById, req.user.id));
     }
 
     if (priority) {
@@ -728,6 +747,23 @@ export const getAssignedTasks = async (req: Request, res: Response) => {
     }
 
     const teamId = req.query.teamId as string | undefined;
+
+    // If teamId is provided, verify user is a member of the team
+    if (teamId && teamId !== 'undefined' && teamId !== 'null') {
+      const membership = await db.select()
+        .from(teamMembers)
+        .where(and(
+          eq(teamMembers.teamId, teamId),
+          eq(teamMembers.userId, req.user.id)
+        ))
+        .limit(1);
+
+      if (!membership.length) {
+        return res.status(403).json({
+          message: 'You are not a member of this team'
+        });
+      }
+    }
 
     const assignedTasks = await db
       .select({

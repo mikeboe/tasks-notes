@@ -12,8 +12,14 @@ run-api:
 run-client:
 	cd apps/client && npm run dev
 
+run-mcp:
+	cd apps/mcp-server && npm run dev
+
 build-api:
 	cd apps/api && npm run build
 
 build-client:
 	cd apps/client && npm run build
+
+build-mcp:
+	cd apps/mcp-server && npm run build

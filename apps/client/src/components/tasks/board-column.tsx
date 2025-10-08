@@ -56,11 +56,11 @@ export function BoardColumn({ column, tasks, isOverlay, onTaskClick }: BoardColu
   };
 
   const variants = cva(
-    "h-full size-full min-h-40 flex-1  flex flex-col snap-center border-0 shadow-white",
+    "h-full size-full min-h-40 flex-1 flex flex-col snap-center border-0 bg-transparent",
     {
       variants: {
         dragging: {
-          default: "border-2 border-transparent",
+          default: "border-0",
           over: "ring-2 opacity-30",
           overlay: "ring-2 ring-primary",
         },
