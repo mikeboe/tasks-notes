@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
 import { tags, createTagSchema } from '../schema/tasks-schema';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, isNull } from 'drizzle-orm';
 
 // Get all tags
 export const getTags = async (req: Request, res: Response) => {
@@ -12,10 +12,15 @@ export const getTags = async (req: Request, res: Response) => {
       });
     }
 
-    // Get default tags (where organizationId is null)
+    const teamId = req.query.teamId as string | undefined;
+
+    // Filter by teamId: null for personal tags, specific teamId for team tags
+    const whereCondition = teamId ? eq(tags.teamId, teamId) : isNull(tags.teamId);
+
     const allTags = await db
       .select()
       .from(tags)
+      .where(whereCondition)
       .orderBy(asc(tags.name));
 
     res.json(allTags);
@@ -45,14 +50,17 @@ export const createTag = async (req: Request, res: Response) => {
     }
 
     const { name } = validation.data;
+    const teamId = req.query.teamId as string | undefined;
 
-    // Check if tag with same name already exists
+    // Check if tag with same name already exists in the same context (team or personal)
+    const whereCondition = teamId ? eq(tags.teamId, teamId) : isNull(tags.teamId);
     const existingTag = await db
       .select()
       .from(tags)
-      .where(eq(tags.name, name));
+      .where(whereCondition);
 
-    if (existingTag.length > 0) {
+    const nameExists = existingTag.some(tag => tag.name === name);
+    if (nameExists) {
       return res.status(400).json({
         message: 'Tag with this name already exists'
       });
@@ -60,7 +68,7 @@ export const createTag = async (req: Request, res: Response) => {
 
     const newTag = await db.insert(tags).values({
       name,
-      organizationId: null // For now, all tags are default
+      teamId: teamId || null
     }).returning();
 
     res.status(201).json(newTag[0]);

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { UserManagement } from "./user-management";
 import { ApiKeysSettings } from "./api-keys-settings";
 import { TeamManagement } from "./team-management";
+import { TaskStagesSettings } from "./task-stages-settings";
 import { type User } from "@/types";
 import {
   Sidebar,
@@ -22,7 +23,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Users, Key, Layers } from "lucide-react";
+import { Users, Key, Layers, Columns3 } from "lucide-react";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -30,7 +31,7 @@ interface SettingsDialogProps {
   currentUser: User | null;
 }
 
-type SettingsSection = "users" | "teams" | "api-keys";
+type SettingsSection = "users" | "teams" | "task-stages" | "api-keys";
 
 export function SettingsDialog({ open, onClose, currentUser }: SettingsDialogProps) {
   const isAdmin = currentUser?.role === 'admin';
@@ -41,6 +42,7 @@ export function SettingsDialog({ open, onClose, currentUser }: SettingsDialogPro
   const navItems = [
     ...(isAdmin ? [{ id: "users" as const, name: "User Management", icon: Users }] : []),
     { id: "teams" as const, name: "Teams", icon: Layers },
+    { id: "task-stages" as const, name: "Task Stages", icon: Columns3 },
     { id: "api-keys" as const, name: "API Keys", icon: Key },
   ];
 
@@ -99,6 +101,7 @@ export function SettingsDialog({ open, onClose, currentUser }: SettingsDialogPro
                 <UserManagement />
               )}
               {activeSection === "teams" && <TeamManagement />}
+              {activeSection === "task-stages" && <TaskStagesSettings />}
               {activeSection === "api-keys" && <ApiKeysSettings />}
             </div>
           </main>

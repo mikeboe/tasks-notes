@@ -79,15 +79,16 @@ async function apiRequest<T>(
 
 export class TasksApi {
   // Task operations
-  static async getTasks(filters?: TaskFilters): Promise<ApiResponse<Task[]>> {
+  static async getTasks(filters?: TaskFilters, teamId?: string | null): Promise<ApiResponse<Task[]>> {
     try {
       const params = new URLSearchParams();
       if (filters?.assignee_id) params.append('assignee_id', filters.assignee_id);
       if (filters?.priority) params.append('priority', filters.priority);
-      
+      if (teamId) params.append('teamId', teamId);
+
       const queryString = params.toString();
       const endpoint = queryString ? `/?${queryString}` : "/";
-      
+
       const tasks = await apiRequest<Task[]>(endpoint);
       return { success: true, data: tasks };
     } catch (error) {
@@ -104,9 +105,10 @@ export class TasksApi {
     }
   }
 
-  static async createTask(taskData: CreateTaskRequest): Promise<ApiResponse<Task>> {
+  static async createTask(taskData: CreateTaskRequest, teamId?: string | null): Promise<ApiResponse<Task>> {
     try {
-      const newTask = await apiRequest<Task>("/", {
+      const queryParams = teamId ? `?teamId=${teamId}` : '';
+      const newTask = await apiRequest<Task>(`/${queryParams}`, {
         method: "POST",
         body: JSON.stringify(taskData),
       });
@@ -140,18 +142,20 @@ export class TasksApi {
   }
 
   // Task Stage operations
-  static async getTaskStages(): Promise<ApiResponse<TaskStage[]>> {
+  static async getTaskStages(teamId?: string | null): Promise<ApiResponse<TaskStage[]>> {
     try {
-      const stages = await apiRequest<TaskStage[]>(STAGES_API_BASE);
+      const queryParams = teamId ? `?teamId=${teamId}` : '';
+      const stages = await apiRequest<TaskStage[]>(`${STAGES_API_BASE}${queryParams}`);
       return { success: true, data: stages };
     } catch (error) {
       return { success: false, error: error instanceof TasksApiError ? error.message : "Failed to get task stages" };
     }
   }
 
-  static async createTaskStage(stageData: CreateStageRequest): Promise<ApiResponse<TaskStage>> {
+  static async createTaskStage(stageData: CreateStageRequest, teamId?: string | null): Promise<ApiResponse<TaskStage>> {
     try {
-      const newStage = await apiRequest<TaskStage>(STAGES_API_BASE, {
+      const queryParams = teamId ? `?teamId=${teamId}` : '';
+      const newStage = await apiRequest<TaskStage>(`${STAGES_API_BASE}${queryParams}`, {
         method: "POST",
         body: JSON.stringify(stageData),
       });
@@ -197,18 +201,20 @@ export class TasksApi {
   }
 
   // Tag operations
-  static async getTags(): Promise<ApiResponse<Tag[]>> {
+  static async getTags(teamId?: string | null): Promise<ApiResponse<Tag[]>> {
     try {
-      const tags = await apiRequest<Tag[]>(TAGS_API_BASE);
+      const queryParams = teamId ? `?teamId=${teamId}` : '';
+      const tags = await apiRequest<Tag[]>(`${TAGS_API_BASE}${queryParams}`);
       return { success: true, data: tags };
     } catch (error) {
       return { success: false, error: error instanceof TasksApiError ? error.message : "Failed to get tags" };
     }
   }
 
-  static async createTag(tagData: CreateTagRequest): Promise<ApiResponse<Tag>> {
+  static async createTag(tagData: CreateTagRequest, teamId?: string | null): Promise<ApiResponse<Tag>> {
     try {
-      const newTag = await apiRequest<Tag>(TAGS_API_BASE, {
+      const queryParams = teamId ? `?teamId=${teamId}` : '';
+      const newTag = await apiRequest<Tag>(`${TAGS_API_BASE}${queryParams}`, {
         method: "POST",
         body: JSON.stringify(tagData),
       });

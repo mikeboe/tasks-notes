@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Filter, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { TaskDetailModal } from "./task-detail-modal";
+import { useTeamContext } from "@/hooks/use-team-context";
 
 // Convert TaskStage to Column format for DnD
 function stageToColumn(stage: TaskStage): Column {
@@ -49,6 +50,9 @@ function taskToTask(task: TaskType): Task {
 
 export type ColumnId = string;
 export function KanbanBoard() {
+    // Team Context
+    const { teamId } = useTeamContext();
+
     // API Data State
     const [stages, setStages] = useState<TaskStage[]>([]);
     const [allTasks, setAllTasks] = useState<TaskType[]>([]);
@@ -81,7 +85,7 @@ export function KanbanBoard() {
     // Load initial data
     useEffect(() => {
         loadData();
-    }, [filters]);
+    }, [filters, teamId]);
 
     // Convert API data to DnD format
     useEffect(() => {
@@ -100,8 +104,8 @@ export function KanbanBoard() {
 
         try {
             const [tasksResponse, stagesResponse, usersResponse] = await Promise.all([
-                TasksApi.getTasks(filters),
-                isInitial ? TasksApi.getTaskStages() : Promise.resolve({ success: true, data: stages }),
+                TasksApi.getTasks(filters, teamId),
+                isInitial ? TasksApi.getTaskStages(teamId) : Promise.resolve({ success: true, data: stages }),
                 isInitial ? TasksApi.getUsers() : Promise.resolve({ success: true, data: users })
             ]);
 

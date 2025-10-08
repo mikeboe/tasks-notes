@@ -16,6 +16,7 @@ import { TasksApi } from "@/lib/tasks-api";
 import type { Task, TaskStage, Tag, User as UserType, CreateTaskRequest, UpdateTaskRequest } from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTeamContext } from "@/hooks/use-team-context";
 
 interface TaskDetailModalProps {
   taskId: string | null;
@@ -32,6 +33,7 @@ interface ChecklistItem {
 }
 
 export function TaskDetailModal({ taskId, onClose, onTaskCreated, onTaskUpdated }: TaskDetailModalProps) {
+  const { teamId } = useTeamContext();
   const [task, setTask] = useState<Task | null>(null);
   const [stages, setStages] = useState<TaskStage[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -72,8 +74,8 @@ export function TaskDetailModal({ taskId, onClose, onTaskCreated, onTaskUpdated 
     try {
       // Load stages, tags, and users in parallel
       const [stagesResponse, tagsResponse, usersResponse] = await Promise.all([
-        TasksApi.getTaskStages(),
-        TasksApi.getTags(),
+        TasksApi.getTaskStages(teamId),
+        TasksApi.getTags(teamId),
         TasksApi.getUsers()
       ]);
       
@@ -124,7 +126,7 @@ export function TaskDetailModal({ taskId, onClose, onTaskCreated, onTaskUpdated 
 
   const loadTagsOnly = async () => {
     try {
-      const tagsResponse = await TasksApi.getTags();
+      const tagsResponse = await TasksApi.getTags(teamId);
       if (tagsResponse.success && tagsResponse.data) {
         setTags(tagsResponse.data);
       }
@@ -172,7 +174,7 @@ export function TaskDetailModal({ taskId, onClose, onTaskCreated, onTaskUpdated 
           end_date: formData.end_date ? `${formData.end_date}T23:59:59Z` : undefined,
         };
         
-        const response = await TasksApi.createTask(createData);
+        const response = await TasksApi.createTask(createData, teamId);
         if (response.success && response.data) {
           if (onTaskCreated) {
             onTaskCreated(response.data);

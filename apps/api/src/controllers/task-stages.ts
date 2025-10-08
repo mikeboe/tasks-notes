@@ -21,7 +21,9 @@ export const getTaskStages = async (req: Request, res: Response) => {
     const teamId = req.query.teamId as string | undefined;
 
     // Filter by teamId: null for personal stages, specific teamId for team stages
-    const whereCondition = teamId ? eq(taskStages.teamId, teamId) : isNull(taskStages.teamId);
+    const whereCondition = teamId
+      ? eq(taskStages.teamId, teamId)
+      : and(isNull(taskStages.teamId), eq(taskStages.userId, req.user.id));
 
     const stages = await db
       .select()
@@ -59,7 +61,9 @@ export const createTaskStage = async (req: Request, res: Response) => {
     const teamId = req.query.teamId as string | undefined;
 
     // Get the current max order to append the new stage at the end
-    const whereCondition = teamId ? eq(taskStages.teamId, teamId) : isNull(taskStages.teamId);
+    const whereCondition = teamId
+      ? eq(taskStages.teamId, teamId)
+      : and(isNull(taskStages.teamId), eq(taskStages.userId, req.user!.id));
 
     const maxOrderResult = await db
       .select({ maxOrder: taskStages.order })
@@ -75,7 +79,8 @@ export const createTaskStage = async (req: Request, res: Response) => {
     const newStage = await db.insert(taskStages).values({
       name,
       order: maxOrder + 1,
-      teamId: teamId || null
+      teamId: teamId || null,
+      userId: teamId ? null : req.user!.id // Only set userId for personal stages
     }).returning();
 
     res.status(201).json(newStage[0]);
@@ -113,10 +118,7 @@ export const updateTaskStageOrder = async (req: Request, res: Response) => {
           order: index,
           updatedAt: new Date()
         })
-        .where(and(
-          eq(taskStages.id, stageId),
-          isNull(taskStages.organizationId) // Only allow reordering default stages for now
-        ))
+        .where(eq(taskStages.id, stageId))
     );
 
     await Promise.all(updatePromises);
@@ -153,10 +155,7 @@ export const updateTaskStage = async (req: Request, res: Response) => {
     const updatedStage = await db.update(taskStages).set({
       name,
       updatedAt: new Date(),
-    }).where(and(
-      eq(taskStages.id, stageId),
-      isNull(taskStages.organizationId) // Only allow updating default stages for now
-    )).returning();
+    }).where(eq(taskStages.id, stageId)).returning();
 
     if (updatedStage.length === 0) {
       return res.status(404).json({ message: 'Task stage not found' });
@@ -192,10 +191,16 @@ export const deleteTaskStage = async (req: Request, res: Response) => {
     const tasksUsingStage = await db.select().from(tasks).where(eq(tasks.statusId, stageId));
     if (tasksUsingStage.length > 0) {
       // Move tasks to the first available stage (default behavior)
+      const teamId = stage[0].teamId;
+      const userId = stage[0].userId;
+      const whereCondition = teamId
+        ? eq(taskStages.teamId, teamId)
+        : and(isNull(taskStages.teamId), eq(taskStages.userId, userId));
+
       const firstStage = await db
         .select()
         .from(taskStages)
-        .where(isNull(taskStages.organizationId))
+        .where(whereCondition)
         .orderBy(asc(taskStages.order))
         .limit(1);
 

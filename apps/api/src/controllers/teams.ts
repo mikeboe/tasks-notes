@@ -10,7 +10,20 @@ import {
   type Team
 } from '../schema/teams-schema';
 import { users } from '../schema/auth-schema';
+import { taskStages } from '../schema/tasks-schema';
 import { eq, and, sql } from 'drizzle-orm';
+
+// Helper function to create default task stages
+async function createDefaultTaskStages(userId: string, teamId: string | null = null, tx?: any) {
+  const dbInstance = tx || db;
+  const defaultStages = [
+    { name: 'To Do', order: 0, teamId, userId: teamId ? null : userId },
+    { name: 'In Progress', order: 1, teamId, userId: teamId ? null : userId },
+    { name: 'Done', order: 2, teamId, userId: teamId ? null : userId },
+  ];
+
+  await dbInstance.insert(taskStages).values(defaultStages);
+}
 
 /**
  * Create a new team
@@ -36,7 +49,7 @@ export const createTeam = async (req: Request, res: Response) => {
 
     const { name, color, icon } = validation.data;
 
-    // Create team and add creator as owner in a transaction
+    // Create team, add creator as owner, and create default task stages in a transaction
     const result = await db.transaction(async (tx) => {
       // Create the team
       const newTeam = await tx.insert(teams).values({
@@ -52,6 +65,9 @@ export const createTeam = async (req: Request, res: Response) => {
         userId: req.user!.id,
         role: 'owner',
       });
+
+      // Create default task stages for the team
+      await createDefaultTaskStages(req.user!.id, newTeam[0].id, tx);
 
       return newTeam[0];
     });

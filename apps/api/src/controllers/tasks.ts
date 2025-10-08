@@ -425,6 +425,7 @@ export const createTask = async (req: Request, res: Response) => {
     }
 
     const { title, status_id, priority, assigned_to_ids, tag_ids, notes, start_date, end_date, linked_note_ids } = validation.data;
+    const teamId = req.query.teamId as string | undefined;
 
     // Verify status exists
     const statusExists = await db.select().from(taskStages).where(eq(taskStages.id, status_id));
@@ -441,6 +442,7 @@ export const createTask = async (req: Request, res: Response) => {
       startDate: start_date ? new Date(start_date) : undefined,
       endDate: end_date ? new Date(end_date) : undefined,
       createdById: req.user.id,
+      teamId: teamId || null,
     }).returning();
 
     const taskId = newTask[0].id;

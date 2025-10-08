@@ -17,18 +17,31 @@ import {
   changePasswordSchema,
   microsoftLoginSchema
 } from '../schema/auth-schema';
+import { taskStages } from '../schema/tasks-schema';
 import { eq, and, gt, isNull, like, or } from 'drizzle-orm';
-import { 
-  hashPassword, 
-  verifyPassword, 
-  generateAccessToken, 
-  generateRefreshToken, 
+import {
+  hashPassword,
+  verifyPassword,
+  generateAccessToken,
+  generateRefreshToken,
   hashRefreshToken,
   generateEmailVerificationToken,
   generatePasswordResetToken,
   generateApiKey,
   hashApiKey
 } from '../utils/auth';
+
+// Helper function to create default task stages
+async function createDefaultTaskStages(userId: string, teamId: string | null = null, tx?: any) {
+  const dbInstance = tx || db;
+  const defaultStages = [
+    { name: 'To Do', order: 0, teamId, userId },
+    { name: 'In Progress', order: 1, teamId, userId },
+    { name: 'Done', order: 2, teamId, userId },
+  ];
+
+  await dbInstance.insert(taskStages).values(defaultStages);
+}
 
 const cookieOptions = {
   httpOnly: true,
@@ -61,26 +74,34 @@ export const register = async (req: Request, res: Response) => {
     const passwordHash = await hashPassword(password);
     const emailVerificationToken = generateEmailVerificationToken();
 
-    // Create user
-    const newUser = await db.insert(users).values({
-      email,
-      passwordHash,
-      firstName,
-      lastName,
-      emailVerificationToken
-    }).returning({
-      id: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      role: users.role,
-      emailVerified: users.emailVerified
+    // Create user and default task stages in a transaction
+    const result = await db.transaction(async (tx) => {
+      // Create user
+      const newUser = await tx.insert(users).values({
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        emailVerificationToken
+      }).returning({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        emailVerified: users.emailVerified
+      });
+
+      // Create default personal task stages for the new user
+      await createDefaultTaskStages(newUser[0].id, null, tx);
+
+      return newUser[0];
     });
 
     // TODO: Send email verification email here
     // For now, we'll just return success
 
-    res.status(201).json(newUser[0]);
+    res.status(201).json(result);
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({

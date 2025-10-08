@@ -20,6 +20,7 @@ import { X } from "lucide-react"
 import { TasksApi } from "@/lib/tasks-api"
 import { toast } from "sonner"
 import type { Tag } from "@/types"
+import { useTeamContext } from "@/hooks/use-team-context"
 
 interface TagsComboboxProps {
   selectedTagIds: string[]
@@ -30,14 +31,15 @@ interface TagsComboboxProps {
   placeholder?: string
 }
 
-export function TagsCombobox({ 
-  selectedTagIds, 
-  onTagsChange, 
+export function TagsCombobox({
+  selectedTagIds,
+  onTagsChange,
   availableTags,
   onTagsUpdated,
   label = "Tags",
-  placeholder = "Search and select tags..." 
+  placeholder = "Search and select tags..."
 }: TagsComboboxProps) {
+  const { teamId } = useTeamContext();
   const [open, setOpen] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState("")
   const [isCreating, setIsCreating] = React.useState(false)
@@ -68,17 +70,17 @@ export function TagsCombobox({
 
     setIsCreating(true)
     try {
-      const response = await TasksApi.createTag({ name: searchValue.trim() })
+      const response = await TasksApi.createTag({ name: searchValue.trim() }, teamId)
       if (response.success && response.data) {
         toast.success("Tag created successfully")
-        
+
         // Add the new tag to selected tags
         onTagsChange([...selectedTagIds, response.data.id])
-        
+
         // Clear search and close
         setSearchValue("")
         setOpen(false)
-        
+
         // Refresh the tags list
         await onTagsUpdated()
       } else {

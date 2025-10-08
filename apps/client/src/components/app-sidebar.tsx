@@ -24,6 +24,7 @@ import {
 import { NavFavorites } from "./nav-favorites"
 import { NavUser } from "./nav-user"
 import { useAuth } from "@/context/NewAuthContext"
+import { useTeamContext } from "@/hooks/use-team-context"
 
 // This is sample data.
 const data = {
@@ -43,30 +44,6 @@ const data = {
       logo: Command,
       plan: "Free",
     },
-  ],
-  navMain: [
-    {
-      title: "Search",
-      url: "#",
-      icon: Search,
-    },
-    // {
-    //   title: "Ask AI",
-    //   url: "#",
-    //   icon: Sparkles,
-    // },
-    {
-      title: "Tasks",
-      url: "/tasks",
-      icon: CircleCheck,
-    
-    },
-    // {
-    //   title: "Inbox",
-    //   url: "#",
-    //   icon: Inbox,
-    //   badge: "10",
-    // },
   ],
   navSecondary: [
     {
@@ -259,12 +236,27 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const { user } = useAuth()
+  const { teamId } = useTeamContext()
+
+  // Build nav items with dynamic URLs based on team context
+  const navMain = React.useMemo(() => [
+    {
+      title: "Search",
+      url: "#",
+      icon: Search,
+    },
+    {
+      title: "Tasks",
+      url: teamId ? `/${teamId}/tasks` : "/tasks",
+      icon: CircleCheck,
+    },
+  ], [teamId])
 
   return (
     <Sidebar className="border-r-0" {...props}>
       <SidebarHeader>
         <TeamSwitcher />
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
       </SidebarHeader>
       <SidebarContent>
         {/* <NavNotesDndTest /> */}

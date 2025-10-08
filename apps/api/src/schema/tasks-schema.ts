@@ -10,6 +10,7 @@ export const taskStages: PgTableWithColumns<any> = pgTable('task_stages', {
   name: varchar('name', { length: 100 }).notNull(),
   order: integer('order').notNull().default(0),
   teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }), // Can be null for user-specific stages
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }), // For personal stages (when teamId is null)
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

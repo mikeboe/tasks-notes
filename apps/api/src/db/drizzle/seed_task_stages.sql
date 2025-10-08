@@ -1,6 +1,4 @@
--- Insert default task stages
-INSERT INTO task_stages (name, "order", organization_id) VALUES 
-('To Do', 0, NULL),
-('In Progress', 1, NULL),
-('Done', 2, NULL)
-ON CONFLICT DO NOTHING;
+-- Task stages are now created automatically when:
+-- 1. A new user registers (personal stages with user_id)
+-- 2. A new team is created (team stages with team_id)
+-- This file is kept for reference but no longer seeds global stages
