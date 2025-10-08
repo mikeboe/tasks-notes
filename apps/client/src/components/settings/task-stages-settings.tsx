@@ -38,7 +38,6 @@ interface SortableStageItemProps {
 
 function SortableStageItem({
   stage,
-  onEdit,
   onDelete,
   isEditing,
   editValue,
