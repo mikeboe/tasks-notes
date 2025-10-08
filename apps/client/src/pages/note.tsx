@@ -25,7 +25,7 @@ const NotePage = () => {
   const uploadFile = async (file: File): Promise<string> => {
     const response = await AssetsApi.uploadFile(file);
     if (response.success && response.data) {
-      return response.data.id; // Return asset ID to use with resolveFileUrl
+      return response.data.s3Url; // Return the S3 URL directly for immediate display
     }
     throw new Error(response.error || "Failed to upload file");
   };
