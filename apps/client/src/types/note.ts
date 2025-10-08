@@ -1,3 +1,4 @@
+import type { Tag } from "./index";
 
 export interface Note {
   id: string;
@@ -12,4 +13,5 @@ export interface Note {
   updatedAt: string;
   isFavorite: boolean;
   children?: Note[];
+  tags?: Tag[];
 }

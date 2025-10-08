@@ -2,7 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { NotesApi } from "@/lib/notes-api";
 import { AssetsApi } from "@/lib/assets-api";
-import { type Note } from "@/types/index";
+import { TasksApi } from "@/lib/tasks-api";
+import { type Note, type Tag } from "@/types/index";
 import "@blocknote/core/fonts/inter.css";
 
 import { useCreateBlockNote } from "@blocknote/react";
@@ -13,12 +14,21 @@ import debounce from "lodash.debounce";
 import { useNotes } from "@/context/NotesContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NavActions } from "@/components/nav-actions";
+import { TagsCombobox } from "@/components/tasks/tags-combobox";
+import { useTeamContext } from "@/hooks/use-team-context";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Tag as TagIcon } from "lucide-react";
 
 const NotePage = () => {
   const { id } = useParams<{ id: string }>();
+  const { teamId } = useTeamContext();
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [isTagModalOpen, setIsTagModalOpen] = useState<boolean>(false);
   const { updateNoteTitleInTree } = useNotes();
 
   // Upload file function for BlockNote
@@ -56,14 +66,20 @@ const NotePage = () => {
       setIsLoading(true);
       const fetchNote = async () => {
         try {
-          const response = await NotesApi.getNoteById(id);
-          if (response.success && response.data) {
-            setNote(response.data);
-            setTitle(response.data.title);
+          const [noteResponse, tagsResponse] = await Promise.all([
+            NotesApi.getNoteById(id),
+            TasksApi.getTags(teamId)
+          ]);
+
+          if (noteResponse.success && noteResponse.data) {
+            setNote(noteResponse.data);
+            setTitle(noteResponse.data.title);
+            setSelectedTagIds(noteResponse.data.tags?.map(t => t.id) || []);
+
             // Load the content into the editor
-            if (response.data.content) {
+            if (noteResponse.data.content) {
               try {
-                const blocks = JSON.parse(response.data.content);
+                const blocks = JSON.parse(noteResponse.data.content);
                 editor.replaceBlocks(editor.document, blocks);
               } catch (e) {
                 console.error("Error parsing note content:", e);
@@ -72,6 +88,10 @@ const NotePage = () => {
             } else {
               editor.replaceBlocks(editor.document, [{ type: "paragraph", content: "" }]);
             }
+          }
+
+          if (tagsResponse.success && tagsResponse.data) {
+            setTags(tagsResponse.data);
           }
         } catch (error) {
           console.error("Failed to fetch note:", error);
@@ -83,7 +103,7 @@ const NotePage = () => {
     } else {
       setIsLoading(false);
     }
-  }, [id, editor]);
+  }, [id, editor, teamId]);
 
   const debouncedSaveContent = useMemo(
     () =>
@@ -117,6 +137,27 @@ const NotePage = () => {
     debouncedSaveTitle(newTitle);
   };
 
+  const handleTagsChange = async (tagIds: string[]) => {
+    setSelectedTagIds(tagIds);
+    if (id) {
+      await NotesApi.updateNote(id, { tag_ids: tagIds });
+      // Update local note state
+      const updatedTags = tags.filter(tag => tagIds.includes(tag.id));
+      setNote(prev => prev ? { ...prev, tags: updatedTags } : null);
+    }
+  };
+
+  const loadTagsOnly = async () => {
+    try {
+      const tagsResponse = await TasksApi.getTags(teamId);
+      if (tagsResponse.success && tagsResponse.data) {
+        setTags(tagsResponse.data);
+      }
+    } catch (error) {
+      console.error("Failed to reload tags:", error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center p-4">
@@ -139,13 +180,14 @@ const NotePage = () => {
     );
   }
 
+  const selectedTags = tags.filter(tag => selectedTagIds.includes(tag.id));
+
   return (
     <div className="flex justify-center p-4">
       <div className="w-full max-w-4xl">
         {note ? (
           <div>
             <div className="flex px-[54px]">
-
               <input
                 type="text"
                 value={title}
@@ -156,6 +198,45 @@ const NotePage = () => {
                 <NavActions note={note} />
               </div>
             </div>
+
+            {/* Display Selected Tags */}
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 px-[54px] mb-4">
+                {selectedTags.map((tag) => (
+                  <Badge
+                    key={tag.id}
+                    variant="secondary"
+                    className="flex items-center gap-1 cursor-pointer hover:bg-secondary/80"
+                    onClick={() => setIsTagModalOpen(true)}
+                  >
+                    <TagIcon className="h-3 w-3" />
+                    <span>{tag.name}</span>
+                  </Badge>
+                ))}
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => setIsTagModalOpen(true)}
+                >
+                  + Add tag
+                </Badge>
+              </div>
+            )}
+
+            {/* Add tag button when no tags */}
+            {selectedTags.length === 0 && (
+              <div className="px-[54px] mb-4">
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => setIsTagModalOpen(true)}
+                >
+                  <TagIcon className="h-3 w-3 mr-1" />
+                  Add tags
+                </Badge>
+              </div>
+            )}
+
             <BlockNoteView editor={editor} onChange={handleEditorChange} />
           </div>
         ) : (
@@ -164,6 +245,23 @@ const NotePage = () => {
           </div>
         )}
       </div>
+
+      {/* Tags Modal */}
+      <Dialog open={isTagModalOpen} onOpenChange={setIsTagModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manage Tags</DialogTitle>
+          </DialogHeader>
+          <TagsCombobox
+            selectedTagIds={selectedTagIds}
+            onTagsChange={handleTagsChange}
+            availableTags={tags}
+            onTagsUpdated={loadTagsOnly}
+            label="Tags"
+            placeholder="Search and select tags..."
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

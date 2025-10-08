@@ -88,7 +88,7 @@ export class NotesApi {
     }
   }
 
-  static async updateNote(noteId: string, noteData: Partial<Note>): Promise<ApiResponse<Note>> {
+  static async updateNote(noteId: string, noteData: Partial<Note> & { tag_ids?: string[] }): Promise<ApiResponse<Note>> {
     try {
       const updatedNote = await apiRequest<Note>(`/${noteId}`, {
         method: "PUT",

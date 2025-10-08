@@ -19,6 +19,7 @@ import { NotesApi } from "@/lib/notes-api"
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
 import type { Note } from "@/types"
+import { useTeamContext } from "@/hooks/use-team-context"
 
 interface NotesComboboxProps {
   selectedNoteIds: string[]
@@ -27,12 +28,13 @@ interface NotesComboboxProps {
   placeholder?: string
 }
 
-export function NotesCombobox({ 
-  selectedNoteIds, 
-  onNotesChange, 
+export function NotesCombobox({
+  selectedNoteIds,
+  onNotesChange,
   label = "Linked Notes",
-  placeholder = "Search and select notes..." 
+  placeholder = "Search and select notes..."
 }: NotesComboboxProps) {
+  const { teamId } = useTeamContext()
   const [open, setOpen] = React.useState(false)
   const [notes, setNotes] = React.useState<Note[]>([])
   const [loading, setLoading] = React.useState(false)
@@ -40,12 +42,12 @@ export function NotesCombobox({
 
   React.useEffect(() => {
     loadNotes()
-  }, [])
+  }, [teamId])
 
   const loadNotes = async () => {
     setLoading(true)
     try {
-      const response = await NotesApi.getNotes()
+      const response = await NotesApi.getNotes(teamId)
       if (response.success && response.data) {
         setNotes(response.data)
       }

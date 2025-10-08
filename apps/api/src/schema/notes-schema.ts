@@ -2,6 +2,7 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, boolean, type PgTableWithColumns, unique } from 'drizzle-orm/pg-core';
 import { users } from './auth-schema';
 import { teams } from './teams-schema';
+import { tags } from './tasks-schema';
 import { z } from 'zod';
 
 export const notes: PgTableWithColumns<any> = pgTable('notes', {
@@ -27,6 +28,13 @@ export const favorites = pgTable('favorites', {
   userNoteUnique: unique().on(table.userId, table.noteId),
 }));
 
+export const noteTags: PgTableWithColumns<any> = pgTable('note_tags', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  noteId: uuid('note_id').references(() => notes.id, { onDelete: 'cascade' }).notNull(),
+  tagId: uuid('tag_id').references(() => tags.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 
 export const createNoteSchema = z.object({
   title: z.string().min(1).max(255),
@@ -40,6 +48,7 @@ export const updateNoteSchema = z.object({
   content: z.string().optional(),
   parentId: z.string().uuid().optional(),
   order: z.number().int().optional(),
+  tag_ids: z.array(z.string().uuid()).optional(),
 });
 
 export const reorderNoteSchema = z.object({
@@ -50,3 +59,5 @@ export type Note = typeof notes.$inferSelect;
 export type NewNote = typeof notes.$inferInsert;
 export type Favorite = typeof favorites.$inferSelect;
 export type NewFavorite = typeof favorites.$inferInsert;
+export type NoteTag = typeof noteTags.$inferSelect;
+export type NewNoteTag = typeof noteTags.$inferInsert;
