@@ -1,8 +1,9 @@
 
 import { Request, Response } from 'express';
 import { db } from '../db';
-import { notes, favorites, createNoteSchema, updateNoteSchema, reorderNoteSchema } from '../schema/notes-schema';
+import { notes, favorites, createNoteSchema, updateNoteSchema, reorderNoteSchema, noteTags } from '../schema/notes-schema';
 import { teamMembers } from '../schema/teams-schema';
+import { tags } from '../schema/tasks-schema';
 import { eq, and, asc, desc, max, min, lt, gt, gte, lte, isNull } from 'drizzle-orm';
 import { extractTextFromBlockNote } from '../utils/text-extractor';
 
@@ -84,7 +85,21 @@ export const getNoteById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
-    res.json(note[0]);
+    // Fetch tags for this note
+    const noteTags_result = await db.select({
+      id: tags.id,
+      name: tags.name,
+      teamId: tags.teamId,
+      createdAt: tags.createdAt,
+    })
+    .from(noteTags)
+    .innerJoin(tags, eq(noteTags.tagId, tags.id))
+    .where(eq(noteTags.noteId, noteId));
+
+    res.json({
+      ...note[0],
+      tags: noteTags_result,
+    });
   } catch (error) {
     console.error('Get note by id error:', error);
     res.status(500).json({
@@ -174,8 +189,8 @@ export const updateNote = async (req: Request, res: Response) => {
       });
     }
 
-    const { title, content, parentId, order } = validation.data;
-    
+    const { title, content, parentId, order, tag_ids } = validation.data;
+
     const searchableContent = content ? extractTextFromBlockNote(content) : undefined;
 
     const updatedNote = await db.update(notes).set({
@@ -191,7 +206,56 @@ export const updateNote = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
-    res.json(updatedNote[0]);
+    // Handle tag_ids if provided
+    if (tag_ids !== undefined) {
+      // Delete existing note tags
+      await db.delete(noteTags).where(eq(noteTags.noteId, noteId));
+
+      // Insert new note tags
+      if (tag_ids.length > 0) {
+        await db.insert(noteTags).values(
+          tag_ids.map(tagId => ({
+            noteId,
+            tagId,
+          }))
+        );
+      }
+    }
+
+    // Fetch the updated note with tags
+    const noteWithTags = await db.select({
+      id: notes.id,
+      title: notes.title,
+      content: notes.content,
+      searchableContent: notes.searchableContent,
+      userId: notes.userId,
+      teamId: notes.teamId,
+      parentId: notes.parentId,
+      order: notes.order,
+      archived: notes.archived,
+      createdAt: notes.createdAt,
+      updatedAt: notes.updatedAt,
+    }).from(notes).where(eq(notes.id, noteId)).limit(1);
+
+    if (noteWithTags.length === 0) {
+      return res.status(404).json({ message: 'Note not found' });
+    }
+
+    // Fetch tags for this note
+    const noteTags_result = await db.select({
+      id: tags.id,
+      name: tags.name,
+      teamId: tags.teamId,
+      createdAt: tags.createdAt,
+    })
+    .from(noteTags)
+    .innerJoin(tags, eq(noteTags.tagId, tags.id))
+    .where(eq(noteTags.noteId, noteId));
+
+    res.json({
+      ...noteWithTags[0],
+      tags: noteTags_result,
+    });
   } catch (error) {
     console.error('Update note error:', error);
     res.status(500).json({

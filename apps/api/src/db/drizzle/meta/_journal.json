@@ -113,6 +113,13 @@
       "when": 1759897288591,
       "tag": "0015_regular_warstar",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1759994604102,
+      "tag": "0016_striped_star_brand",
+      "breakpoints": true
     }
   ]
 }
