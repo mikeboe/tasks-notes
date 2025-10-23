@@ -2,6 +2,7 @@ import * as React from "react"
 import {
   CircleCheck,
   Search,
+  Video,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -36,6 +37,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Tasks",
       url: teamId ? `/${teamId}/tasks` : "/tasks",
       icon: CircleCheck,
+    },
+    {
+      title: "Recordings",
+      url: teamId ? `/${teamId}/recordings` : "/recordings",
+      icon: Video,
     },
   ], [teamId])
 

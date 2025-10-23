@@ -7,6 +7,9 @@ import ProtectedRoute from "../auth/ProtectedRoute";
 import NotePage from "@/pages/note";
 import TasksPage from "@/pages/tasks";
 import TaskDetailPage from "@/pages/task-detail";
+import RecordingsPage from "@/pages/recordings";
+import RecordingDetailPage from "@/pages/recording-detail";
+import RecordingPublicPage from "@/pages/recording-public";
 
 export const mainRoutes: RouteElement[] = [
   // Personal context routes
@@ -30,6 +33,16 @@ export const mainRoutes: RouteElement[] = [
     element: <ProtectedRoute><TaskDetailPage /></ProtectedRoute>,
     visible: true,
   },
+  {
+    path: "/recordings",
+    element: <ProtectedRoute><RecordingsPage /></ProtectedRoute>,
+    visible: true,
+  },
+  {
+    path: "/recordings/:id",
+    element: <ProtectedRoute><RecordingDetailPage /></ProtectedRoute>,
+    visible: true,
+  },
 
   // Team context routes
   {
@@ -50,6 +63,23 @@ export const mainRoutes: RouteElement[] = [
   {
     path: "/:teamId/tasks/:id",
     element: <ProtectedRoute><TaskDetailPage /></ProtectedRoute>,
+    visible: true,
+  },
+  {
+    path: "/:teamId/recordings",
+    element: <ProtectedRoute><RecordingsPage /></ProtectedRoute>,
+    visible: true,
+  },
+  {
+    path: "/:teamId/recordings/:id",
+    element: <ProtectedRoute><RecordingDetailPage /></ProtectedRoute>,
+    visible: true,
+  },
+
+  // Public routes
+  {
+    path: "/share/:shareToken",
+    element: <RecordingPublicPage />,
     visible: true,
   },
 

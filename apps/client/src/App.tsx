@@ -35,7 +35,7 @@ function App() {
             (route) =>
               route.visible && (
                 <>
-                  {route.path !== "/signup" && route.path !== "/login" && route.path !== "/verify-email" ? (
+                  {route.path !== "/signup" && route.path !== "/login" && route.path !== "/verify-email" && !route.path.startsWith("/share") ? (
                     <Route
                       key="navigation"
                       element={<Navigation />}
