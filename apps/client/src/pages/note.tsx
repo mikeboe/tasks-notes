@@ -6,8 +6,13 @@ import { TasksApi } from "@/lib/tasks-api";
 import { type Note, type Tag } from "@/types/index";
 import "@blocknote/core/fonts/inter.css";
 
-import { useCreateBlockNote } from "@blocknote/react";
-import { BlockNoteEditor } from "@blocknote/core";
+import {
+  useCreateBlockNote,
+  getDefaultReactSlashMenuItems,
+  SuggestionMenuController,
+  type DefaultReactSuggestionItem,
+} from "@blocknote/react";
+import { BlockNoteEditor, filterSuggestionItems } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
 import debounce from "lodash.debounce";
@@ -18,7 +23,6 @@ import { TagsCombobox } from "@/components/tasks/tags-combobox";
 import { useTeamContext } from "@/hooks/use-team-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tag as TagIcon, FileText } from "lucide-react";
 import { ContentExtractionModal } from "@/components/editor/content-extraction-modal";
 import { parseMarkdownToBlocks } from "@/lib/markdown-parser";
@@ -190,6 +194,24 @@ const NotePage = () => {
     }
   };
 
+  // Custom slash menu item for content extraction
+  const extractContentSlashItem = (): DefaultReactSuggestionItem => ({
+    title: "Extract Content",
+    onItemClick: () => {
+      setIsExtractionModalOpen(true);
+    },
+    aliases: ["extract", "ocr", "scrape", "url", "pdf", "image"],
+    group: "Advanced",
+    icon: <FileText size={18} />,
+    subtext: "Extract text from URLs, PDFs, or images",
+  });
+
+  // Get custom slash menu items including default ones
+  const getCustomSlashMenuItems = (editor: BlockNoteEditor): DefaultReactSuggestionItem[] => [
+    ...getDefaultReactSlashMenuItems(editor),
+    extractContentSlashItem(),
+  ];
+
   if (isLoading) {
     return (
       <div className="flex justify-center p-4">
@@ -269,7 +291,14 @@ const NotePage = () => {
               </div>
             )}
 
-            <BlockNoteView editor={editor} onChange={handleEditorChange} />
+            <BlockNoteView editor={editor} onChange={handleEditorChange} slashMenu={false}>
+              <SuggestionMenuController
+                triggerCharacter={"/"}
+                getItems={async (query) =>
+                  filterSuggestionItems(getCustomSlashMenuItems(editor), query)
+                }
+              />
+            </BlockNoteView>
           </div>
         ) : (
           <div className="text-center">
@@ -277,20 +306,6 @@ const NotePage = () => {
           </div>
         )}
       </div>
-
-      {/* Floating Action Button for Content Extraction */}
-      {note && (
-        <div className="fixed bottom-8 right-8 z-50">
-          <Button
-            size="lg"
-            className="rounded-full shadow-lg h-14 w-14"
-            onClick={() => setIsExtractionModalOpen(true)}
-            title="Extract content from URL or file"
-          >
-            <FileText className="h-6 w-6" />
-          </Button>
-        </div>
-      )}
 
       {/* Content Extraction Modal */}
       <ContentExtractionModal

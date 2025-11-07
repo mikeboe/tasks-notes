@@ -2,26 +2,45 @@ ingress:
   name: tasks-notes-ingress
   allowOrigin: "*"
 client:
-  host: ${APP_HOST}
+  host: app.tasks-notes.mikeboe.com
   image:
     repository: ghcr.io/mikeboe/tasks-notes-client
     tag: 1.2.1
   env:
-    VITE_API_BASE_URL: ${API_HOST}
-    VITE_ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID}
-    VITE_ENTRA_AUTHORITY: https://login.microsoftonline.com/${ENTRA_TENANT_ID}
-    VITE_ENTRA_REDIRECT_URI: ${APP_HOST}
-    VITE_ENTRA_POST_LOGOUT_REDIRECT_URI: ${APP_HOST}
+    VITE_API_BASE_URL: https://api.tasks-notes.mikeboe.com
+    VITE_ENTRA_CLIENT_ID: d8a2013e-0862-4559-ab1a-ac9195a15bc2
+    VITE_ENTRA_AUTHORITY: https://login.microsoftonline.com/d671caf9-3826-4098-b367-3ad9dc71a7f6
+    VITE_ENTRA_REDIRECT_URI: https://app.tasks-notes.mikeboe.com
+    VITE_ENTRA_POST_LOGOUT_REDIRECT_URI: https://app.tasks-notes.mikeboe.com
 api:
-  host: ${API_HOST}
+  host: api.tasks-notes.mikeboe.com
   image:
     repository: ghcr.io/mikeboe/tasks-notes-api
     tag: 1.2.1
   env:
-    JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
-    JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+    JWT_ACCESS_SECRET:
+      secretKeyRef:
+        name: task-notes-secrets
+        key: JWT_ACCESS_SECRET
+    JWT_REFRESH_SECRET:
+      secretKeyRef:
+        name: task-notes-secrets
+        key: JWT_REFRESH_SECRET
     JWT_ACCESS_EXPIRES_IN: 15m
     JWT_REFRESH_EXPIRES_IN: 7d
-    DATABASE_URL: ${DATABASE_URL}
+    DATABASE_URL:
+      secretKeyRef:
+        name: task-notes-secrets
+        key: DATABASE_URL
+    S3_ACCESS_KEY:
+      secretKeyRef:
+        name: task-notes-secrets
+        key: S3_ACCESS_KEY
+    S3_SECRET_KEY:
+      secretKeyRef:
+        name: task-notes-secrets
+        key: S3_SECRET_KEY
+    S3_URL: https://s3.eu-central-3.ionoscloud.com
+    S3_PUBLIC_URL: https://uploads.rocket-ai.io
     NODE_ENV: production
     PORT: 3000
