@@ -12,5 +12,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@mendable/firecrawl-js": "^4.5.0"
+  }
 }

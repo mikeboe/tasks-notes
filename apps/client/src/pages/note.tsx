@@ -18,7 +18,11 @@ import { TagsCombobox } from "@/components/tasks/tags-combobox";
 import { useTeamContext } from "@/hooks/use-team-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Tag as TagIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tag as TagIcon, FileText } from "lucide-react";
+import { ContentExtractionModal } from "@/components/editor/content-extraction-modal";
+import { parseMarkdownToBlocks } from "@/lib/markdown-parser";
+import toast from "react-hot-toast";
 
 const NotePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +33,7 @@ const NotePage = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [isTagModalOpen, setIsTagModalOpen] = useState<boolean>(false);
+  const [isExtractionModalOpen, setIsExtractionModalOpen] = useState<boolean>(false);
   const { updateNoteTitleInTree } = useNotes();
 
   // Upload file function for BlockNote
@@ -158,6 +163,33 @@ const NotePage = () => {
     }
   };
 
+  const handleExtractionSuccess = (markdown: string, metadata: any) => {
+    try {
+      // Parse markdown to BlockNote blocks
+      const blocks = parseMarkdownToBlocks(markdown);
+
+      // Get current cursor position
+      const currentBlock = editor.getTextCursorPosition().block;
+
+      // Insert blocks after current block
+      editor.insertBlocks(blocks, currentBlock, "after");
+
+      // Move cursor to the end of inserted content
+      const lastInsertedBlock = blocks[blocks.length - 1];
+      if (lastInsertedBlock) {
+        editor.setTextCursorPosition(lastInsertedBlock, "end");
+      }
+
+      // Save the updated content
+      debouncedSaveContent(editor);
+
+      toast.success(`Content extracted from ${metadata.extractionType}!`);
+    } catch (error) {
+      console.error("Failed to insert extracted content:", error);
+      toast.error("Failed to insert content into note");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center p-4">
@@ -245,6 +277,27 @@ const NotePage = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Action Button for Content Extraction */}
+      {note && (
+        <div className="fixed bottom-8 right-8 z-50">
+          <Button
+            size="lg"
+            className="rounded-full shadow-lg h-14 w-14"
+            onClick={() => setIsExtractionModalOpen(true)}
+            title="Extract content from URL or file"
+          >
+            <FileText className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
+
+      {/* Content Extraction Modal */}
+      <ContentExtractionModal
+        open={isExtractionModalOpen}
+        onClose={() => setIsExtractionModalOpen(false)}
+        onSuccess={handleExtractionSuccess}
+      />
 
       {/* Tags Modal */}
       <Dialog open={isTagModalOpen} onOpenChange={setIsTagModalOpen}>
