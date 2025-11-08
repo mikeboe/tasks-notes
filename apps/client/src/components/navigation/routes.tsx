@@ -10,6 +10,7 @@ import TaskDetailPage from "@/pages/task-detail";
 import RecordingsPage from "@/pages/recordings";
 import RecordingDetailPage from "@/pages/recording-detail";
 import RecordingPublicPage from "@/pages/recording-public";
+import ChatPage from "@/pages/chat";
 
 export const mainRoutes: RouteElement[] = [
   // Personal context routes
@@ -43,6 +44,11 @@ export const mainRoutes: RouteElement[] = [
     element: <ProtectedRoute><RecordingDetailPage /></ProtectedRoute>,
     visible: true,
   },
+  {
+    path: "/chat",
+    element: <ProtectedRoute><ChatPage /></ProtectedRoute>,
+    visible: true,
+  },
 
   // Team context routes
   {
@@ -73,6 +79,11 @@ export const mainRoutes: RouteElement[] = [
   {
     path: "/:teamId/recordings/:id",
     element: <ProtectedRoute><RecordingDetailPage /></ProtectedRoute>,
+    visible: true,
+  },
+  {
+    path: "/:teamId/chat",
+    element: <ProtectedRoute><ChatPage /></ProtectedRoute>,
     visible: true,
   },
 

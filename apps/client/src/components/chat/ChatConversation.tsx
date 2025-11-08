@@ -4,7 +4,6 @@ import { ChatMessage } from './ChatMessage';
 import { ChatToolCall } from './ChatToolCall';
 import { Loader2, Bot } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
 
 export function ChatConversation() {
   const { messages, isStreaming, streamingMessageContent, streamingToolCalls, isLoading, currentConversation } = useChat();

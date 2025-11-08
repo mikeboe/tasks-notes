@@ -3,6 +3,7 @@ import {
   CircleCheck,
   Search,
   Video,
+  MessageSquare,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -32,6 +33,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Search",
       url: "#",
       icon: Search,
+    },
+    {
+      title: "Chat",
+      url: teamId ? `/${teamId}/chat` : "/chat",
+      icon: MessageSquare,
     },
     {
       title: "Tasks",

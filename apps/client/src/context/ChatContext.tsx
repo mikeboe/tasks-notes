@@ -206,12 +206,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendMessage = useCallback(async (content: string, noteIds?: string[]) => {
     if (!content.trim()) return;
 
-    // Create conversation if none exists
+    // Use a ref to track the conversation ID across async operations
     let conversationId = state.currentConversation?.id;
+
+    // Create conversation if none exists
     if (!conversationId) {
-      await createConversation();
-      // Wait for state to update
-      conversationId = state.currentConversation?.id;
+      const newConversation = await chatAPI.createConversation(undefined, teamId || undefined);
+      conversationId = newConversation.id;
+
+      // Update state with new conversation
+      setState(prev => ({
+        ...prev,
+        currentConversation: newConversation,
+      }));
+
+      // Reload conversations list in background
+      loadConversations();
     }
 
     // Add user message optimistically
@@ -392,14 +402,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [
     state.currentConversation,
     state.messages,
-    state.streamingMessageContent,
-    state.streamingReasoning,
-    state.streamingSources,
     chatMode,
     selectedModel,
     teamId,
     location.pathname,
-    createConversation,
     loadConversations,
   ]);
 
