@@ -5,6 +5,7 @@ import { useChat } from "@/context/ChatContext"
 import { ChatConversation } from "@/components/chat/ChatConversation"
 import { ChatInput } from "@/components/chat/ChatInput"
 import { ChatQuickActions } from "@/components/chat/ChatQuickActions"
+import { NewChatButton } from "@/components/chat/NewChatButton"
 import { Bot } from "lucide-react"
 
 const Index = () => {
@@ -44,7 +45,7 @@ const Index = () => {
             <div className="flex h-10 w-10 shrink-0 select-none items-center justify-center rounded-full bg-primary">
               <Bot className="h-6 w-6 text-primary-foreground" />
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-2xl font-bold">
                 {getGreeting()}, {getUserName()}!
               </h1>
@@ -54,7 +55,21 @@ const Index = () => {
                   : "Ask me anything about your notes and tasks"}
               </p>
             </div>
+            <NewChatButton />
           </div>
+        </div>
+      )}
+
+      {/* Header when conversation is active */}
+      {!showQuickActions && (
+        <div className="mb-4 shrink-0 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold">
+              {currentConversation?.title || 'Chat'}
+            </h2>
+          </div>
+          <NewChatButton />
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { X, Maximize2, Minimize2, MessageSquare, Sparkles } from 'lucide-react';
 import { useChat } from '@/context/ChatContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { NewChatButton } from './NewChatButton';
 
 export function ChatHeader() {
   const { chatMode, isDocked, currentConversation, toggleMode, toggleDocked, toggleChat } = useChat();
@@ -41,6 +42,13 @@ export function ChatHeader() {
       </div>
 
       <div className="flex items-center gap-1">
+        <NewChatButton
+          variant="ghost"
+          size="icon"
+          showText={false}
+          className="h-8 w-8"
+        />
+
         <Button
           variant="ghost"
           size="icon"

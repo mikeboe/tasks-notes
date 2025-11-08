@@ -125,6 +125,19 @@
   }
 }
 
+/* Chat docked layout adjustments */
+body.chat-docked [data-slot="sidebar-inset"] {
+  margin-right: 400px;
+  transition: margin-right 300ms ease-in-out;
+}
+
+@media (max-width: 640px) {
+  /* On mobile, don't adjust margin when chat is docked (full screen) */
+  body.chat-docked [data-slot="sidebar-inset"] {
+    margin-right: 0;
+  }
+}
+
 /* typography */
 .rai-md-h1 {
   @apply mb-8 scroll-m-20 text-4xl font-extrabold tracking-tight last:mb-0;

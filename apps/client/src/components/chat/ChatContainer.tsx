@@ -3,9 +3,23 @@ import { ChatHeader } from './ChatHeader';
 import { ChatConversation } from './ChatConversation';
 import { ChatInput } from './ChatInput';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
 
 export function ChatContainer() {
   const { isOpen, isDocked } = useChat();
+
+  // Add/remove class to body when chat is docked to adjust layout
+  useEffect(() => {
+    if (isDocked && isOpen) {
+      document.body.classList.add('chat-docked');
+    } else {
+      document.body.classList.remove('chat-docked');
+    }
+
+    return () => {
+      document.body.classList.remove('chat-docked');
+    };
+  }, [isDocked, isOpen]);
 
   if (!isOpen) {
     return null;
