@@ -23,6 +23,28 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // For tool_call messages, only show the tool component without the message bubble
+  if (message.messageType === 'tool_call' && message.metadata?.tool_name) {
+    return (
+      <div className="flex gap-3">
+        {/* Avatar */}
+        <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-muted">
+          <Bot className="h-4 w-4" />
+        </div>
+
+        {/* Tool call */}
+        <div className="flex flex-col gap-2 max-w-[80%]">
+          <ChatToolCall
+            toolName={message.metadata.tool_name}
+            args={message.metadata.tool_args}
+            result={message.metadata.tool_result}
+            error={message.metadata.error}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn('flex gap-3', isUser && 'flex-row-reverse')}>
       {/* Avatar */}
@@ -65,23 +87,13 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
               <ChatReasoning content={message.metadata.reasoning} isStreaming={isStreaming} />
             )}
 
-            {/* Tool calls (for agent mode) */}
-            {message.messageType === 'tool_call' && message.metadata?.tool_name && (
-              <ChatToolCall
-                toolName={message.metadata.tool_name}
-                args={message.metadata.tool_args}
-                result={message.metadata.tool_result}
-                error={message.metadata.error}
-              />
-            )}
-
             {/* Sources */}
             {message.metadata?.sources && message.metadata.sources.length > 0 && (
               <ChatSources sources={message.metadata.sources} />
             )}
 
             {/* Actions */}
-            {!isStreaming && (
+            {!isStreaming && message.messageType === 'content' && (
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"

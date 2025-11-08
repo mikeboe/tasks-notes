@@ -251,8 +251,11 @@ ${contextContent}`,
           if (message && typeof message === 'object' && 'content' in message) {
             const content = message.content;
 
-            // Stream content chunks
-            if (content && typeof content === 'string' && content.length > 0) {
+            // Check if this is a ToolMessage (tool result) - don't stream as content
+            const isToolMessage = message.constructor?.name === 'ToolMessage' || (metadata && metadata.langgraph_node === 'tools');
+
+            // Stream content chunks (but NOT for tool messages)
+            if (!isToolMessage && content && typeof content === 'string' && content.length > 0) {
               assistantResponse += content;
               res.write(`data: ${JSON.stringify({ type: 'content', delta: content })}\n\n`);
             }

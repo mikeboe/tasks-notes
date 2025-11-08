@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useChat } from '@/context/ChatContext';
 import { ChatMessage } from './ChatMessage';
-import { Loader2 } from 'lucide-react';
+import { ChatToolCall } from './ChatToolCall';
+import { Loader2, Bot } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 export function ChatConversation() {
   const { messages, isStreaming, streamingMessageContent, streamingToolCalls, isLoading, currentConversation } = useChat();
@@ -14,7 +16,7 @@ export function ChatConversation() {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages.length, streamingMessageContent]);
+  }, [messages.length, streamingMessageContent, streamingToolCalls.length]);
 
   if (isLoading && messages.length === 0) {
     return (
@@ -40,9 +42,26 @@ export function ChatConversation() {
           <>
             {/* Show active tool calls during streaming */}
             {streamingToolCalls.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground px-4">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>Using tools: {streamingToolCalls.map(tc => formatToolName(tc.name)).join(', ')}</span>
+              <div className="flex gap-3">
+                {/* Avatar */}
+                <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-muted">
+                  <Bot className="h-4 w-4" />
+                </div>
+
+                {/* Tool calls */}
+                <div className="flex flex-col gap-2 max-w-[80%]">
+                  {streamingToolCalls.map((toolCall, index) => {
+                    const hasArgs = toolCall.args && Object.keys(toolCall.args).length > 0;
+                    return (
+                      <ChatToolCall
+                        key={`${toolCall.name}-${index}`}
+                        toolName={toolCall.name}
+                        args={hasArgs ? toolCall.args : undefined}
+                        isLoading={!hasArgs}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -68,11 +87,4 @@ export function ChatConversation() {
       </div>
     </ScrollArea>
   );
-}
-
-function formatToolName(name: string): string {
-  return name
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
 }

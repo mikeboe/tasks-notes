@@ -317,36 +317,51 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             break;
 
           case 'done':
-            // Add assistant message using current state from prev
+            // Reload messages from server to get properly saved tool_call messages
+            // Use setState to access current conversationId from state
             setState(prev => {
-              const assistantMessage: Message = {
-                id: `temp-${Date.now()}-assistant`,
-                conversationId: conversationId || '',
-                role: 'assistant',
-                content: prev.streamingMessageContent,
-                messageType: 'content',
-                metadata: {
-                  model: selectedModel,
-                  reasoning: prev.streamingReasoning || undefined,
-                  sources: prev.streamingSources.length > 0 ? prev.streamingSources : undefined,
-                },
-                order: prev.messages.length + 1,
-                createdAt: new Date().toISOString(),
-              };
+              const currentConvId = prev.currentConversation?.id;
 
-              return {
+              // Clear tool calls immediately since they'll be in reloaded messages
+              const newState = {
                 ...prev,
-                messages: [...prev.messages, assistantMessage],
-                isStreaming: false,
-                streamingMessageContent: '',
-                streamingReasoning: '',
                 streamingToolCalls: [],
-                streamingSources: [],
               };
-            });
 
-            // Reload conversations to update preview
-            loadConversations();
+              // If we have a conversation ID, reload messages
+              if (currentConvId) {
+                chatAPI.getMessages(currentConvId)
+                  .then(({ messages: updatedMessages }) => {
+                    setState(state => ({
+                      ...state,
+                      messages: updatedMessages,
+                      isStreaming: false,
+                      streamingMessageContent: '',
+                      streamingReasoning: '',
+                      streamingSources: [],
+                    }));
+                  })
+                  .catch((error) => {
+                    console.error('Failed to reload messages:', error);
+                    // On error, still clear streaming state
+                    setState(state => ({
+                      ...state,
+                      isStreaming: false,
+                      streamingMessageContent: '',
+                      streamingReasoning: '',
+                      streamingSources: [],
+                    }));
+                  });
+              } else {
+                // No conversation ID, clear streaming state immediately
+                newState.isStreaming = false;
+                newState.streamingMessageContent = '';
+                newState.streamingReasoning = '';
+                newState.streamingSources = [];
+              }
+
+              return newState;
+            });
             break;
 
           case 'error':
