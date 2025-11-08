@@ -39,6 +39,7 @@ export const noteTags: PgTableWithColumns<any> = pgTable('note_tags', {
 export const createNoteSchema = z.object({
   title: z.string().min(1).max(255),
   content: z.string().optional(),
+  searchableContent: z.string().optional(),
   parentId: z.string().uuid().optional(),
   order: z.number().int().optional(),
 });
@@ -46,6 +47,7 @@ export const createNoteSchema = z.object({
 export const updateNoteSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   content: z.string().optional(),
+  searchableContent: z.string().optional(),
   parentId: z.string().uuid().optional(),
   order: z.number().int().optional(),
   tag_ids: z.array(z.string().uuid()).optional(),

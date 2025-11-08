@@ -1,11 +1,11 @@
 ingress:
   name: tasks-notes-ingress
-  allowOrigin: "*"
+  allowOrigin: "https://app.tasks-notes.mikeboe.com"
 client:
   host: app.tasks-notes.mikeboe.com
   image:
     repository: ghcr.io/mikeboe/tasks-notes-client
-    tag: 1.11.0
+    tag: 1.11.1
   env:
     VITE_API_BASE_URL: https://api.tasks-notes.mikeboe.com
     VITE_ENTRA_CLIENT_ID: d8a2013e-0862-4559-ab1a-ac9195a15bc2
@@ -16,7 +16,7 @@ api:
   host: api.tasks-notes.mikeboe.com
   image:
     repository: ghcr.io/mikeboe/tasks-notes-api
-    tag: 1.11.0
+    tag: 1.11.1
   env:
     JWT_ACCESS_SECRET:
       secretKeyRef:
@@ -42,5 +42,13 @@ api:
         key: S3_SECRET_KEY
     S3_URL: https://s3.eu-central-3.ionoscloud.com
     S3_PUBLIC_URL: https://uploads.rocket-ai.io
+    FIRECRAWL_API_KEY:
+      secretKeyRef:
+        name: task-notes-secrets
+        key: FIRECRAWL_API_KEY
+    MISTRAL_API_KEY:
+      secretKeyRef:
+        name: task-notes-secrets
+        key: MISTRAL_API_KEY
     NODE_ENV: production
     PORT: 3000

@@ -13,6 +13,7 @@ import teamsRoutes from "./routes/teams";
 import assetsRoutes from "./routes/assets";
 import recordingsRoutes from "./routes/recordings";
 import contentExtractionRoutes from "./routes/content-extraction";
+import chatRoutes from "./routes/chat";
 
 export const createApp = () => {
     const app = express();
@@ -50,6 +51,7 @@ export const createApp = () => {
     app.use("/assets", assetsRoutes);
     app.use("/recordings", recordingsRoutes);
     app.use("/content-extraction", contentExtractionRoutes);
+    app.use("/chat", chatRoutes);
 
     // Health check
 

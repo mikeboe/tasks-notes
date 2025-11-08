@@ -1,0 +1,12 @@
+services:
+  meilisearch:
+    container_name: tasks-notes-meilisearch
+    image: getmeili/meilisearch:v1.12.3
+    restart: always
+    user: "${UID}:${GID}"
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_HOST=http://meilisearch:7700  
+      - MEILI_NO_ANALYTICS=true
+      - MEILI_MASTER_KEY=DrhYf7zENyR6AlUCKmnz0eYASOQdl6zxH7s7MKFSfFCt

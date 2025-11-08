@@ -118,8 +118,9 @@ const NotePage = () => {
     () =>
       debounce(async (currentEditor: BlockNoteEditor) => {
         if (id) {
+          const searchableContent = await currentEditor.blocksToMarkdownLossy();
           const content = JSON.stringify(currentEditor.document);
-          await NotesApi.updateNote(id, { content });
+          await NotesApi.updateNote(id, { content, searchableContent });
         }
       }, 200),
     [id]

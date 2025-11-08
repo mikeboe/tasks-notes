@@ -11,6 +11,7 @@ import { mainRoutes } from "./components/navigation/routes";
 // import keycloak from "./keycloak";
 import Navigation from "./components/navigation/navigation";
 import { ThemeProvider } from "./components/theme-provider";
+import { ChatButton, ChatContainer } from "./components/chat";
 
 function App() {
   return (
@@ -58,7 +59,11 @@ function App() {
           )}
         </Route>
 
-      </Routes >
+      </Routes>
+
+      {/* Chat components */}
+      <ChatButton />
+      <ChatContainer />
     </ThemeProvider>
   );
 }

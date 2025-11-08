@@ -5,6 +5,7 @@ import { tasks, tags, taskTags } from '../schema/tasks-schema';
 import { users } from '../schema/auth-schema';
 import { eq, and, like, or, ilike } from 'drizzle-orm';
 import { createSearchContext } from '../utils/text-extractor';
+import { searchNotes } from '../utils/meilisearch';
 
 interface SearchResult {
   id: string;
@@ -18,6 +19,8 @@ interface SearchResult {
     status?: string;
     tagNames?: string[];
     createdAt?: string;
+    chunkIndex?: number;
+    totalChunks?: number;
   };
 }
 
@@ -30,7 +33,8 @@ export const search = async (req: Request, res: Response) => {
     }
 
     const query = req.query.q as string;
-    
+    const teamId = req.query.teamId as string | undefined;
+
     if (!query || query.length < 3) {
       return res.json([]);
     }
@@ -38,42 +42,32 @@ export const search = async (req: Request, res: Response) => {
     const searchTerm = `%${query}%`;
     const results: SearchResult[] = [];
 
-    // Search Notes
-    const noteResults = await db
-      .select({
-        id: notes.id,
-        title: notes.title,
-        content: notes.content,
-        searchableContent: notes.searchableContent,
-        createdAt: notes.createdAt,
-      })
-      .from(notes)
-      .where(
-        and(
-          eq(notes.userId, req.user.id),
-          eq(notes.archived, false),
-          or(
-            ilike(notes.title, searchTerm),
-            ilike(notes.searchableContent, searchTerm)
-          )
-        )
-      )
-      .limit(10);
+    // Search Notes using Meilisearch - returns relevant chunks
+    const meilisearchResults = await searchNotes(
+      query,
+      req.user.id,
+      teamId || null,
+      10
+    );
 
-    for (const note of noteResults) {
-      const context = note.searchableContent 
-        ? createSearchContext(note.searchableContent, query, 60)
+    // Return chunk data directly - no need to fetch full notes
+    for (const chunk of meilisearchResults) {
+      // Create context from the chunk's searchable content
+      const context = chunk.searchableContent
+        ? createSearchContext(chunk.searchableContent, query, 150)
         : '';
 
       results.push({
-        id: note.id,
-        title: note.title,
+        id: chunk.noteId, // Use the actual note ID for navigation
+        title: chunk.title,
         type: 'note',
-        content: note.content || '',
+        content: chunk.searchableContent, // Return the relevant chunk
         context,
-        url: `/notes/${note.id}`,
+        url: `/notes/${chunk.noteId}`,
         metadata: {
-          createdAt: note.createdAt.toISOString(),
+          createdAt: chunk.createdAt,
+          chunkIndex: chunk.chunkIndex,
+          totalChunks: chunk.totalChunks,
         },
       });
     }

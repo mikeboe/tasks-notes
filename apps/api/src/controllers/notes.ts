@@ -5,7 +5,8 @@ import { notes, favorites, createNoteSchema, updateNoteSchema, reorderNoteSchema
 import { teamMembers } from '../schema/teams-schema';
 import { tags } from '../schema/tasks-schema';
 import { eq, and, asc, desc, max, min, lt, gt, gte, lte, isNull } from 'drizzle-orm';
-import { extractTextFromBlockNote } from '../utils/text-extractor';
+import { upsertNoteDocument, deleteNoteDocument } from '../utils/meilisearch';
+// import { extractTextFromBlockNote } from '../utils/text-extractor';
 
 export const getNotes = async (req: Request, res: Response) => {
   try {
@@ -124,7 +125,7 @@ export const createNote = async (req: Request, res: Response) => {
       });
     }
 
-    const { title, content, parentId, order } = validation.data;
+    const { title, content, searchableContent,parentId, order } = validation.data;
     const teamId = req.query.teamId as string | undefined;
 
     // Build where conditions for finding max order
@@ -151,7 +152,7 @@ export const createNote = async (req: Request, res: Response) => {
       noteOrder = (maxOrderResult[0]?.maxOrder || 0) + 1;
     }
 
-    const searchableContent = content ? extractTextFromBlockNote(content) : '';
+    // const searchableContent = content ? extractTextFromBlockNote(content) : '';
 
     const newNote = await db.insert(notes).values({
       title,
@@ -162,6 +163,17 @@ export const createNote = async (req: Request, res: Response) => {
       userId: req.user.id,
       teamId: teamId || null,
     }).returning();
+
+    // Sync with Meilisearch
+    await upsertNoteDocument({
+      id: newNote[0].id,
+      title: newNote[0].title,
+      searchableContent: newNote[0].searchableContent || '',
+      userId: newNote[0].userId,
+      teamId: newNote[0].teamId,
+      createdAt: newNote[0].createdAt,
+      updatedAt: newNote[0].updatedAt,
+    });
 
     res.status(201).json(newNote[0]);
   } catch (error) {
@@ -189,9 +201,9 @@ export const updateNote = async (req: Request, res: Response) => {
       });
     }
 
-    const { title, content, parentId, order, tag_ids } = validation.data;
+    const { title, content, searchableContent, parentId, order, tag_ids } = validation.data;
 
-    const searchableContent = content ? extractTextFromBlockNote(content) : undefined;
+    //const searchableContent = content ? extractTextFromBlockNote(content) : undefined;
 
     const updatedNote = await db.update(notes).set({
       title,
@@ -252,6 +264,17 @@ export const updateNote = async (req: Request, res: Response) => {
     .innerJoin(tags, eq(noteTags.tagId, tags.id))
     .where(eq(noteTags.noteId, noteId));
 
+    // Sync with Meilisearch
+    await upsertNoteDocument({
+      id: noteWithTags[0].id,
+      title: noteWithTags[0].title,
+      searchableContent: noteWithTags[0].searchableContent || '',
+      userId: noteWithTags[0].userId,
+      teamId: noteWithTags[0].teamId,
+      createdAt: noteWithTags[0].createdAt,
+      updatedAt: noteWithTags[0].updatedAt,
+    });
+
     res.json({
       ...noteWithTags[0],
       tags: noteTags_result,
@@ -279,6 +302,9 @@ export const deleteNote = async (req: Request, res: Response) => {
     if (deletedNote.length === 0) {
       return res.status(404).json({ message: 'Note not found' });
     }
+
+    // Remove from Meilisearch
+    await deleteNoteDocument(noteId, deletedNote[0].teamId);
 
     res.status(204).end();
   } catch (error) {
@@ -576,6 +602,9 @@ export const archiveNote = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
+    // Remove from Meilisearch (archived notes should not appear in search)
+    await deleteNoteDocument(noteId, archivedNote[0].teamId);
+
     res.json(archivedNote[0]);
   } catch (error) {
     console.error('Archive note error:', error);
@@ -612,17 +641,28 @@ export const duplicateNote = async (req: Request, res: Response) => {
     
     const newOrder = (maxOrderResult[0]?.maxOrder || 0) + 1;
 
-    const searchableContent = note.content ? extractTextFromBlockNote(note.content) : '';
-    
+    //const searchableContent = note.content ? extractTextFromBlockNote(note.content) : '';
+
     const duplicatedNote = await db.insert(notes).values({
       title: `${note.title} (Copy)`,
       content: note.content,
-      searchableContent,
+      searchableContent: note.searchableContent,
       parentId: note.parentId,
       order: newOrder,
       userId: req.user.id,
       archived: false,
     }).returning();
+
+    // Sync with Meilisearch
+    await upsertNoteDocument({
+      id: duplicatedNote[0].id,
+      title: duplicatedNote[0].title,
+      searchableContent: duplicatedNote[0].searchableContent || '',
+      userId: duplicatedNote[0].userId,
+      teamId: duplicatedNote[0].teamId,
+      createdAt: duplicatedNote[0].createdAt,
+      updatedAt: duplicatedNote[0].updatedAt,
+    });
 
     res.status(201).json(duplicatedNote[0]);
   } catch (error) {
