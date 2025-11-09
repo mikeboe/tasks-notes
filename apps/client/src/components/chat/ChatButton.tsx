@@ -13,7 +13,7 @@ export function ChatButton() {
   }
 
   // Don't show button on the Index page (root path)
-  if (location.pathname === '/') {
+  if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/chat' || location.pathname.startsWith('/share')) {
     return null;
   }
 
