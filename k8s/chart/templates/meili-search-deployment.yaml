@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c
+    kompose.version: 1.34.0 (HEAD)
+  labels:
+    io.kompose.service: meili-search
+  name: meili-search
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: meili-search
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -c
+        kompose.version: 1.34.0 (HEAD)
+      labels:
+        io.kompose.service: meili-search
+    spec:
+      imagePullSecrets:
+        - name: registry-1
+      containers:
+        - env:
+            {{- range $key, $value := index .Values "meili-search" "env" }}
+              {{- if kindIs "map" $value }}
+              - name: {{ $key }}
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ $value.secretKeyRef.name }}
+                    key: {{ $value.secretKeyRef.key }}
+              {{- else }}
+              - name: {{ $key }}
+                value: {{ $value | quote }}
+              {{- end }}
+              {{- end }}
+          image: "getmeili/meilisearch:v1.18.0"
+          name: meili-search
+#          resources:
+#            limits:
+#              cpu: 200m
+#              memory: 256Mi
+#            requests:
+#              cpu: 200m
+#              memory: 128Mi
+          ports:
+            - containerPort: 7700
+              protocol: TCP
+      restartPolicy: Always

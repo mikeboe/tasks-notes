@@ -5,7 +5,7 @@ client:
   host: app.tasks-notes.mikeboe.com
   image:
     repository: ghcr.io/mikeboe/tasks-notes-client
-    tag: 1.11.1
+    tag: 1.13.0
   env:
     VITE_API_BASE_URL: https://api.tasks-notes.mikeboe.com
     VITE_ENTRA_CLIENT_ID: d8a2013e-0862-4559-ab1a-ac9195a15bc2
@@ -16,7 +16,7 @@ api:
   host: api.tasks-notes.mikeboe.com
   image:
     repository: ghcr.io/mikeboe/tasks-notes-api
-    tag: 1.11.1
+    tag: 1.13.0
   env:
     JWT_ACCESS_SECRET:
       secretKeyRef:
@@ -50,5 +50,22 @@ api:
       secretKeyRef:
         name: task-notes-secrets
         key: MISTRAL_API_KEY
+    AZURE_API_INSTANCE_NAME: micha-mey7wf6z-swedencentral
+    MEILI_MASTER_KEY:
+      secretKeyRef:
+        name: task-notes-secrets
+        key: MEILI_MASTER_KEY
     NODE_ENV: production
     PORT: 3000
+
+meili-search:
+  image:
+    repository: getmeili/meilisearch
+    tag: v1.18.1
+  env:
+    MEILI_NO_ANALYTICS: "true"
+    MEILI_MASTER_KEY:
+      secretKeyRef:
+        name: task-notes-secrets
+        key: MEILI_MASTER_KEY
+    MEILI_HOST: http://meili-search:7700

@@ -10,6 +10,7 @@ import { NotesProvider } from "./context/NotesContext.tsx";
 import { FavoritesProvider } from "./context/FavoritesContext.tsx";
 import { TeamProvider } from "./context/TeamContext.tsx";
 import { ChatProvider } from "./context/ChatContext.tsx";
+import { CollectionsProvider } from "./context/CollectionsContext.tsx";
 import { MsalProvider } from "@azure/msal-react";
 import { PublicClientApplication } from "@azure/msal-browser";
 import { msalConfig } from "@/lib/msal-config";
@@ -28,10 +29,12 @@ createRoot(document.getElementById("root")!).render(
               <TooltipProvider>
                 <NotesProvider>
                   <FavoritesProvider>
-                    <ChatProvider>
-                      <App />
-                      <Toaster position="top-right" />
-                    </ChatProvider>
+                    <CollectionsProvider>
+                      <ChatProvider>
+                        <App />
+                        <Toaster position="top-right" />
+                      </ChatProvider>
+                    </CollectionsProvider>
                   </FavoritesProvider>
                 </NotesProvider>
               </TooltipProvider>

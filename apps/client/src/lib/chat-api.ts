@@ -14,6 +14,7 @@ export interface ChatContext {
   route?: string;
   noteIds?: string[];
   teamId?: string;
+  collectionId?: string;
 }
 
 export interface MessageMetadata {

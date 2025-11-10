@@ -40,7 +40,7 @@ interface ChatState {
 
 interface ChatContextValue extends ChatState {
   // Actions
-  sendMessage: (content: string, noteIds?: string[]) => Promise<void>;
+  sendMessage: (content: string, noteIds?: string[], contextOverride?: Partial<ChatContextType>) => Promise<void>;
   createConversation: () => Promise<void>;
   selectConversation: (id: string) => Promise<void>;
   deleteConversation: (id: string) => Promise<void>;
@@ -203,7 +203,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /**
    * Send a message
    */
-  const sendMessage = useCallback(async (content: string, noteIds?: string[]) => {
+  const sendMessage = useCallback(async (content: string, noteIds?: string[], contextOverride?: Partial<ChatContextType>) => {
     if (!content.trim()) return;
 
     // Use a ref to track the conversation ID across async operations
@@ -246,11 +246,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       streamingSources: [],
     }));
 
-    // Build context
+    // Build context with optional override
     const context: ChatContextType = {
       route: location.pathname,
       noteIds,
       teamId: teamId || undefined,
+      ...contextOverride, // Allow overriding any context fields
     };
 
     // Stream response

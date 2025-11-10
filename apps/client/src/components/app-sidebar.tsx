@@ -49,6 +49,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: teamId ? `/${teamId}/recordings` : "/recordings",
       icon: Video,
     },
+    {
+      title: "Collections",
+      url: teamId ? `/${teamId}/collections` : "/collections",
+      icon: Video,
+    }
   ], [teamId])
 
   return (

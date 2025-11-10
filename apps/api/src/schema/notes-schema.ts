@@ -15,6 +15,7 @@ export const notes: PgTableWithColumns<any> = pgTable('notes', {
   parentId: uuid('parent_id').references(() => notes.id, { onDelete: 'cascade' }),
   order: integer('order').notNull().default(0),
   archived: boolean('archived').notNull().default(false),
+  isHiddenContent: boolean('is_hidden_content').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

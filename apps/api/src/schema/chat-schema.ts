@@ -33,6 +33,7 @@ export const sendMessageSchema = z.object({
     route: z.string().optional(),
     noteIds: z.array(z.string().uuid()).optional(),
     teamId: z.string().uuid().optional(),
+    collectionId: z.string().uuid().optional(),
   }).optional(),
 });
 
@@ -101,6 +102,7 @@ export interface ChatContext {
   route?: string;
   noteIds?: string[];
   teamId?: string;
+  collectionId?: string;
 }
 
 export interface ConversationWithPreview extends Conversation {

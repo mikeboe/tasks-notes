@@ -11,6 +11,8 @@ import RecordingsPage from "@/pages/recordings";
 import RecordingDetailPage from "@/pages/recording-detail";
 import RecordingPublicPage from "@/pages/recording-public";
 import ChatPage from "@/pages/chat";
+import CollectionsPage from "@/pages/collections";
+import CollectionDetailPage from "@/pages/collection-detail";
 
 export const mainRoutes: RouteElement[] = [
   // Personal context routes
@@ -47,6 +49,16 @@ export const mainRoutes: RouteElement[] = [
   {
     path: "/chat",
     element: <ProtectedRoute><ChatPage /></ProtectedRoute>,
+    visible: true,
+  },
+  {
+    path: "/collections",
+    element: <ProtectedRoute><CollectionsPage /></ProtectedRoute>,
+    visible: true,
+  },
+  {
+    path: "/collections/:id",
+    element: <ProtectedRoute><CollectionDetailPage /></ProtectedRoute>,
     visible: true,
   },
 

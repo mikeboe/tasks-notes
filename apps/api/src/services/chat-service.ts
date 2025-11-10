@@ -12,6 +12,7 @@ import {
   createGetRecentNotesTool,
   createGetNoteHierarchyTool,
 } from '../agent/tools/notes-tools';
+import { createSearchCollectionTool } from '../agent/tools/collection-tools';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { HumanMessage, AIMessage } from 'langchain';
 
@@ -186,19 +187,33 @@ export class ChatService {
 
       // Create agent with notes tools
       const toolContext = { userId, teamId: context?.teamId };
+
+      // Build tools array - add collection tool if in collection context
+      const tools: any[] = [
+        createGetNoteByIdTool(toolContext),
+        createSearchNotesTool(toolContext),
+        createListNotesTool(toolContext),
+        createGetNotesByTagTool(toolContext),
+        createGetRecentNotesTool(toolContext),
+        createGetNoteHierarchyTool(toolContext),
+      ];
+
+      let collectionPrompt = '';
+      if (context?.collectionId) {
+        // Add collection search tool
+        tools.push(createSearchCollectionTool({
+          ...toolContext,
+          collectionId: context.collectionId,
+        }));
+        collectionPrompt = `\n\nYou are currently in a COLLECTION context. Use the search_collection tool to search within this specific collection's content using semantic/vector search. This tool will find the most relevant content chunks based on the user's query.\n`;
+      }
+
       const agent = createDeepAgent({
-        tools: [
-          createGetNoteByIdTool(toolContext),
-          createSearchNotesTool(toolContext),
-          createListNotesTool(toolContext),
-          createGetNotesByTagTool(toolContext),
-          createGetRecentNotesTool(toolContext),
-          createGetNoteHierarchyTool(toolContext),
-        ],
+        tools,
         model: useLlm(model),
         systemPrompt: `You are a helpful AI assistant integrated into Task Notes, a collaborative productivity application. You have access to the user's notes and can search, retrieve, and analyze them to help answer questions.
 
-${routeContext}
+${routeContext}${collectionPrompt}
 
 You can use the following tools:
 - get_note_by_id: Fetch a specific note by ID
@@ -206,7 +221,7 @@ You can use the following tools:
 - list_notes: List all notes or filter by parent
 - get_notes_by_tag: Find notes by tag
 - get_recent_notes: Get recently modified notes
-- get_note_hierarchy: Understand note structure
+- get_note_hierarchy: Understand note structure${context?.collectionId ? '\n- search_collection: Search within the collection using semantic/vector search (USE THIS FIRST in collection context!)' : ''}
 
 When referencing notes in your responses, use markdown links like [Note Title](note-id).
 
