@@ -6,7 +6,7 @@ ENV PORT=3000
 WORKDIR /app
 
 RUN npm init -y
-RUN npm i argon2
+RUN npm i argon2 drizzle-kit
 
 RUN addgroup --system academy && \
           adduser --system -G academy academy
