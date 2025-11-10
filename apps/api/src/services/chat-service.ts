@@ -210,7 +210,8 @@ export class ChatService {
 
       const agent = createDeepAgent({
         tools,
-        model: useLlm(model),
+        model: model,
+        //useLlm(model),
         systemPrompt: `You are a helpful AI assistant integrated into Task Notes, a collaborative productivity application. You have access to the user's notes and can search, retrieve, and analyze them to help answer questions.
 
 ${routeContext}${collectionPrompt}

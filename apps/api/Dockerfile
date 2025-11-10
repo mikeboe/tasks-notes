@@ -6,8 +6,9 @@ ENV PORT=3000
 
 WORKDIR /app
 
-RUN npm init -y
-RUN npm i argon2 drizzle-kit
+# RUN npm init -y
+COPY package.json ./
+RUN npm i --omit=dev --legacy-peer-deps
 
 RUN addgroup --system academy && \
           adduser --system -G academy academy
@@ -17,4 +18,4 @@ COPY /src/db/drizzle /app/src/db/drizzle
 RUN chown -R academy:academy .
 
 
-CMD [ "node", "main.js" ]
+CMD [ "node", "src/main.js" ]
