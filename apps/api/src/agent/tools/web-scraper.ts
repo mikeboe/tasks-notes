@@ -53,7 +53,7 @@ export const webScraperToolFirecrawl = tool(
         }
     },
     {
-        name: "web_scraper_firecrawl",
+        name: "web_scraper",
         description: "This api gives you access to web scraping capabilities using FireCrawl. This tool allows you to scrape data from a website. You can specify the URL and you will receive the contents of that page.",
         schema: z.object({
             url: z.string().url(),

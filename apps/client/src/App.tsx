@@ -4,7 +4,6 @@ import {
   Routes,
   //useNavigate
 } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
 
 import { mainRoutes } from "./components/navigation/routes";
 // import { useUserStore } from "./context/UserContext";
@@ -16,19 +15,7 @@ import { ChatButton, ChatContainer } from "./components/chat";
 function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <Toaster
-        position="bottom-center"
-        reverseOrder={false}
-        toastOptions={{
-          duration: 3000,
-          success: {
-            icon: "👏",
-          },
-          error: {
-            icon: "😢",
-          },
-        }}
-      />
+      
       <Routes>
 
         <Route element={<Outlet />}>

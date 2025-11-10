@@ -7,6 +7,7 @@ const prompt = `You are a helpful assistant that can use tools to scrape data fr
 export const agent = createDeepAgent({
   // @ts-expect-error incomplete types
   tools: [pdfScraperTool, webScraperToolFirecrawl],
-  model: "gpt-4.1",
+  // @ts-expect-error incomplete types
+  model: useLlm("gpt-4.1"),
   systemPrompt: prompt,
 });

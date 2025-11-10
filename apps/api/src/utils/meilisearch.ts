@@ -52,13 +52,36 @@ export const getIndexName = (teamId: string | null): string => {
  */
 const ensureIndexConfigured = async (indexName: string): Promise<void> => {
   try {
+    // First, try to create the index if it doesn't exist
+    try {
+      const indexExists = await client.getIndex(indexName);
+
+      if (indexExists) {
+        console.log(`Index ${indexName} already exists`);
+        return; // Index exists, no need to create
+      }
+
+      await client.createIndex(indexName);
+
+
+      // Index exists, no need to create
+    } catch (error) {
+      // Index does not exist, create it
+      await client.createIndex(indexName);
+      console.log(`Created Meilisearch index: ${indexName}`);
+    }
+
+
+    // Now configure the index
     const index = client.index(indexName);
 
-    // Update searchable and filterable attributes
     await index.updateSearchableAttributes(['title', 'searchableContent']);
     await index.updateFilterableAttributes(['userId', 'teamId', 'noteId']);
+
+    console.log(`Configured Meilisearch index: ${indexName}`);
   } catch (error) {
     console.error(`Error configuring index ${indexName}:`, error);
+    throw error; // Rethrow so caller knows configuration failed
   }
 };
 
@@ -76,11 +99,16 @@ export const upsertNoteDocument = async (note: {
   updatedAt: Date;
 }): Promise<void> => {
   try {
+      
+
+    await ensureIndexConfigured(note.teamId ? note.teamId : 'personal');
+
     const indexName = getIndexName(note.teamId);
+
     const index = client.index(indexName);
 
     // Ensure the index is properly configured (idempotent operation)
-    await ensureIndexConfigured(indexName);
+    
 
     // First, delete any existing chunks for this note
     await deleteNoteDocument(note.id, note.teamId);

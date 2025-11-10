@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/command"
 import { useDebounce } from "@/hooks/use-debounce"
 import { config } from "@/config"
+import { useTeamContext } from "@/hooks/use-team-context"
 
 export interface SearchResult {
   id: string
@@ -38,6 +39,8 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
   const [results, setResults] = React.useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = React.useState(false)
   const navigate = useNavigate()
+  const { teamId } = useTeamContext();
+
   
   const debouncedQuery = useDebounce(query, 300)
 
@@ -51,7 +54,8 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
       setIsLoading(true)
       try {
         const API_BASE_URL = config.apiUrl || "http://localhost:3000";
-        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(searchQuery)}`, {
+        const teamParam = teamId ? `&teamId=${teamId}` : '';
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(searchQuery)}${teamParam}`, {
           credentials: 'include',
         })
         

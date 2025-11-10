@@ -15,6 +15,7 @@ import {
 import { createSearchCollectionTool } from '../agent/tools/collection-tools';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { HumanMessage, AIMessage } from 'langchain';
+import { agentPrompt } from '../agent/prompt';
 
 export class ChatService {
   /**
@@ -208,27 +209,17 @@ export class ChatService {
         collectionPrompt = `\n\nYou are currently in a COLLECTION context. Use the search_collection tool to search within this specific collection's content using semantic/vector search. This tool will find the most relevant content chunks based on the user's query.\n`;
       }
 
+      let prompt = agentPrompt
+
+      prompt += `### Additional Context
+${routeContext}${collectionPrompt}`
+
       const agent = createDeepAgent({
         tools,
-        model: model,
-        //useLlm(model),
-        systemPrompt: `You are a helpful AI assistant integrated into Task Notes, a collaborative productivity application. You have access to the user's notes and can search, retrieve, and analyze them to help answer questions.
-
-${routeContext}${collectionPrompt}
-
-You can use the following tools:
-- get_note_by_id: Fetch a specific note by ID
-- search_notes: Search notes by content or title
-- list_notes: List all notes or filter by parent
-- get_notes_by_tag: Find notes by tag
-- get_recent_notes: Get recently modified notes
-- get_note_hierarchy: Understand note structure${context?.collectionId ? '\n- search_collection: Search within the collection using semantic/vector search (USE THIS FIRST in collection context!)' : ''}
-
-When referencing notes in your responses, use markdown links like [Note Title](note-id).
-
-${contextContent}`,
+        // @ts-expect-error incomplete types
+        model: useLlm(model),
+        systemPrompt: prompt
       });
-
       // Build conversation history
       const history = await this.getConversationHistory(conversation.id);
       const chatHistory = history
