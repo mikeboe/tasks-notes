@@ -1,0 +1,20 @@
+apiVersion: v1
+data:
+  settings.yml: |-
+    # see https://docs.searxng.org/admin/settings/settings.html#settings-use-default-settings
+    use_default_settings: true
+    server:
+      # base_url is defined in the SEARXNG_BASE_URL environment variable, see .env and docker-compose.yml
+      secret_key: "ultrasecreasdasdatkey"  # change this!
+      limiter: false  # enable this when running the instance for a public usage on the internet
+      image_proxy: true
+    redis:
+      url: redis://redis:6379/0
+    search:
+      formats:
+        - json
+kind: ConfigMap
+metadata:
+  labels:
+    io.kompose.service: searxng
+  name: searxng-cm0

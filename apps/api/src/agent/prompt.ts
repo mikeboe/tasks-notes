@@ -21,11 +21,14 @@ TaskNotes has the following main concepts:
 <available tools>
 ### Notes
 - get_note_by_id(note_id: string) => Fetches a note by its unique identifier. Returns the note's title and content.
-- search_notes(query: string, limit?: number) => Searches notes across the user's workspace and any third party search connectors. Returns a list of relevant notes with their titles, content snippets, and URLs.
 - list_notes: () => Lists all notes available to the user, returning their IDs and titles.
 - get_notes_by_tag(tag_name: string) => Fetches all notes associated with a specific tag. Returns a list of notes with their titles and content snippets.
 
 ### Search
+- searxng_search(query: string) => Performs a web search using SearXNG returning the results as snippets with their urls.
+- search_notes(query: string, limit?: number) => Searches notes across the user's workspace and any third party search connectors. Returns a list of relevant notes with their titles, content snippets, and URLs.
+
+### Web and PDF Scraping
 - web_scraper(url: string) => Scrapes data from a webpage at the specified URL. Returns the content of the page.
 - pdf_scraper(url: string) => Scrapes text content from a PDF document at the specified URL. Returns the extracted text.
 </available tools>

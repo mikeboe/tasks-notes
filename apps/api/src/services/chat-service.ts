@@ -16,6 +16,7 @@ import { createSearchCollectionTool } from '../agent/tools/collection-tools';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { HumanMessage, AIMessage } from 'langchain';
 import { agentPrompt } from '../agent/prompt';
+import { internetSearchTool } from '../agent/tools';
 
 export class ChatService {
   /**
@@ -197,6 +198,7 @@ export class ChatService {
         createGetNotesByTagTool(toolContext),
         createGetRecentNotesTool(toolContext),
         createGetNoteHierarchyTool(toolContext),
+        internetSearchTool,
       ];
 
       let collectionPrompt = '';
@@ -216,7 +218,7 @@ ${routeContext}${collectionPrompt}`
 
       const agent = createDeepAgent({
         tools,
-        // @ts-expect-error incomplete types
+        // @ts-ignore incomplete types
         model: useLlm(model),
         systemPrompt: prompt
       });
