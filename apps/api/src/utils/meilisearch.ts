@@ -194,6 +194,7 @@ export const searchNotes = async (
  */
 export const initializeMeilisearch = async (): Promise<void> => {
   try {
+    console.log('Initializing Meilisearch indexes...');
     // Configure searchable attributes for personal index
     const personalIndex = client.index('personal');
     await personalIndex.updateSearchableAttributes(['title', 'searchableContent']);
