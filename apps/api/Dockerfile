@@ -1,5 +1,6 @@
 FROM docker.io/node:24-alpine
 
+ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
 
