@@ -29,7 +29,7 @@ jobs:
                   cache-dependency-path: "./package-lock.json"
 
             - name: Install All Dependencies
-              run: npm ci
+              run: npm i --legacy-peer-deps
 
             - name: Build Workspace '${{ matrix.app }}'
               run: npm run build --workspace=${{ matrix.app }}
