@@ -48,6 +48,21 @@ export const getIndexName = (teamId: string | null): string => {
 };
 
 /**
+ * Ensure an index exists and has proper configuration
+ */
+const ensureIndexConfigured = async (indexName: string): Promise<void> => {
+  try {
+    const index = client.index(indexName);
+
+    // Update searchable and filterable attributes
+    await index.updateSearchableAttributes(['title', 'searchableContent']);
+    await index.updateFilterableAttributes(['userId', 'teamId', 'noteId']);
+  } catch (error) {
+    console.error(`Error configuring index ${indexName}:`, error);
+  }
+};
+
+/**
  * Add or update a note in Meilisearch
  * Splits long documents into chunks for better search performance
  */
@@ -63,6 +78,9 @@ export const upsertNoteDocument = async (note: {
   try {
     const indexName = getIndexName(note.teamId);
     const index = client.index(indexName);
+
+    // Ensure the index is properly configured (idempotent operation)
+    await ensureIndexConfigured(indexName);
 
     // First, delete any existing chunks for this note
     await deleteNoteDocument(note.id, note.teamId);
